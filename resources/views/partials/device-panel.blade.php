@@ -1,8 +1,14 @@
 {{-- Dashboard panel shared by the public and personal dashboards; data is loaded via fetch() by dashboard.js --}}
-<section data-meteo data-endpoint="{{ $endpoint }}" aria-labelledby="dev-title-{{ $device->id }}">
-    <h2 id="dev-title-{{ $device->id }}">{{ $device->name }}</h2>
+<section class="measurement-panel" data-meteo data-endpoint="{{ $endpoint }}" aria-labelledby="dev-title-{{ $device->uuid }}">
+    <header>
+    @if(request()->routeIs('devices.show'))
+        <h1 id="dev-title-{{ $device->uuid }}">{{ $device->name }}</h1>
+    @else
+        <h2 id="dev-title-{{ $device->uuid }}">{{ $device->name }}</h2>
+    @endif
     <p>{{ $device->location ?: 'Location not specified' }}@if($device->description) – {{ $device->description }}@endif
        <span class="badge">{{ $device->is_public ? 'Public' : 'Private' }}</span></p>
+    </header>
 
     @if($device->types->isEmpty())
         <p role="status">This device has no datasets configured yet.</p>

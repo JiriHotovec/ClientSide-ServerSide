@@ -1,5 +1,5 @@
 <form method="get" class="filters" role="search" aria-label="Filter devices"
-      hx-get="{{ url()->current() }}" hx-trigger="input changed delay:300ms from:find input[type=search], change from:find select" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+      hx-get="{{ url()->current() }}" hx-trigger="input changed delay:600ms from:find input[type=search], change from:find select" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
     <label>Search <input type="search" name="q" value="{{ $search }}" placeholder="Name or location"></label>
     @if(auth()->user()->isAdmin())
         <label>Show <select name="scope">

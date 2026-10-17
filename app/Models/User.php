@@ -33,6 +33,11 @@ class User extends Authenticatable
         return $this->hasMany(Device::class);
     }
 
+    public function initials(): string
+    {
+        return mb_strtoupper(collect(preg_split('/\s+/', trim($this->name)))->filter()->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode(''));
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;

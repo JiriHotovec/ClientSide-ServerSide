@@ -40,6 +40,20 @@ class DeviceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // HTML form (htmx) shape: unchecked checkboxes are absent, per-type overrides arrive as ts[id][field].
+        if ($this->has('_form')) {
+            $types = array_map('intval', (array) $this->input('types', []));
+            $defaults = \App\Models\MeasurementType::whereIn('id', $types)->pluck('color', 'id');
+            $settings = [];
+            foreach ($types as $id) {
+                $row = collect((array) $this->input("ts.$id", []))
+                    ->filter(fn ($v) => $v !== null && $v !== '')
+                    ->reject(fn ($v, $k) => $k === 'color' && strtolower($v) === strtolower($defaults[$id] ?? '#0077b6'));
+                $settings[$id] = $row->all();
+            }
+            $this->merge(['types' => $types, 'type_settings' => $settings, 'is_public' => $this->boolean('is_public')]);
+        }
+
         // Allow the HTML form to send the mapping as a JSON string.
         if (is_string($this->input('source_mapping'))) {
             $decoded = json_decode($this->input('source_mapping'), true);

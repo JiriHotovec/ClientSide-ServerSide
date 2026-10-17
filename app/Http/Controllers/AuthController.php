@@ -25,7 +25,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate(); // prevents session fixation
 
-        return redirect()->intended($this->home($request->user()));
+        return $this->done($request, redirect()->intended($this->home($request->user())));
     }
 
     public function showRegister()
@@ -45,7 +45,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect($this->home($user));
+        return $this->done($request, redirect($this->home($user)));
     }
 
     public function logout(Request $request)
@@ -57,8 +57,16 @@ class AuthController extends Controller
         return redirect('/');
     }
 
+    /** htmx forms can't swap a page with a different layout, so tell it to navigate normally. */
+    private function done(Request $request, \Illuminate\Http\RedirectResponse $redirect)
+    {
+        return $request->header('HX-Request')
+            ? response('', 204, ['HX-Redirect' => $redirect->getTargetUrl()])
+            : $redirect;
+    }
+
     private function home(User $user): string
     {
-        return $user->isAdmin() ? route('manage.overview') : route('dashboard');
+        return route('manage.overview');
     }
 }

@@ -37,7 +37,7 @@ class MeasurementService
         $latest = $data->reverse()->first(fn ($r) => $r['value'] !== null);
 
         return [
-            'device' => ['id' => $device->id, 'name' => $device->name, 'location' => $device->location],
+            'device' => ['id' => $device->uuid, 'name' => $device->name, 'location' => $device->location],
             'type' => ['key' => $type->key, 'name' => $type->name, 'unit' => $display['unit']],
             'display' => $display,
             'period' => $period,

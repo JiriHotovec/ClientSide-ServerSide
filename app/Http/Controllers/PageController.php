@@ -5,16 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Device;
 use App\Services\MeasurementService;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class PageController extends Controller
 {
-    public function welcome(MeasurementService $service)
+    public function welcome(MeasurementService $service): View
     {
-        $featured = Device::public()->with('types')->orderBy('id')->get()
-            ->map(fn ($d) => ['device' => $d, 'snap' => $service->snapshot($d)])
-            ->first(fn ($x) => $x['snap'] && $x['snap']['latest'] !== null);
+        $stations = Device::public()->with('types')->orderBy('id')->get()
+            ->map(fn (Device $device): array => ['device' => $device, 'snap' => $service->snapshot($device)]);
+        $featured = $stations->first(fn ($station) => $station['snap'] && $station['snap']['latest'] !== null);
 
-        return view('welcome', ['featured' => $featured]);
+        return view('welcome', ['featured' => $featured, 'stations' => $stations->take(3)]);
     }
 
     public function publicDevices(MeasurementService $service)
@@ -49,7 +50,7 @@ class PageController extends Controller
 
         return view('partials.device-panel', [
             'device' => $device->load('types'),
-            'endpoint' => url("/api/devices/{$device->id}/measurements"),
+            'endpoint' => url("/api/devices/{$device->uuid}/measurements"),
         ]);
     }
 }

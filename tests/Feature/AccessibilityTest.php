@@ -24,7 +24,7 @@ it('labels every form control on login and register', function (string $url) {
 it('renders the dashboard panel with live regions, a captioned table and a chart text alternative', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
-    $html = $this->get("/devices/{$device->id}")->getContent();
+    $html = $this->get("/devices/{$device->uuid}")->getContent();
 
     expect($html)->toContain('aria-live="polite"')
         ->toContain('<caption data-caption>')

@@ -1,8 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Register')
 @section('content')
-<h1>Create an account</h1>
-<form method="post" action="{{ route('register') }}" class="narrow">
+<h1>Make room for<br><em>your observations.</em></h1>
+<p class="lead">Create an account and give your sensor data a home.</p>
+<form method="post" action="{{ route('register') }}" class="narrow" hx-boost="true" hx-target="#main" hx-select="#main" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]">
     @csrf
     <label>Name
         <input type="text" name="name" value="{{ old('name') }}" required maxlength="100" autocomplete="name"

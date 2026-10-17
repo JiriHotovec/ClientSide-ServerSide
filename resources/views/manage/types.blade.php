@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('title', 'Measurement types')
 @section('content')
 <header class="page-head head-row">
@@ -8,9 +8,8 @@
     </div>
     <a role="button" href="{{ route('manage.types.create') }}">New measurement type</a>
 </header>
-@include('manage._subnav')
 <form method="get" class="filters" role="search" aria-label="Filter measurement types"
-      hx-get="{{ route('manage.types') }}" hx-trigger="input changed delay:300ms from:find input[type=search], change from:find select" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+      hx-get="{{ route('manage.types') }}" hx-trigger="input changed delay:600ms from:find input[type=search], change from:find select" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
     <label>Search <input type="search" name="q" value="{{ $search }}" placeholder="Name or key"></label>
     <label>Show <select name="scope">
         <option value="available" @selected($scope === 'available')>Available to me</option>
@@ -42,7 +41,9 @@
             <td class="row-actions">
                 @can('update', $t)
                     <a role="button" class="outline small" href="{{ route('manage.types.edit', $t) }}" hx-boost="false">Edit<span class="sr-only"> {{ $t->name }}</span></a>
-                    <button type="button" class="outline contrast small" data-action="delete-type" data-id="{{ $t->id }}" data-name="{{ $t->name }}">Delete<span class="sr-only"> {{ $t->name }}</span></button>
+                    <form method="post" action="{{ route('manage.types.destroy', $t) }}" class="inline-form" hx-confirm="Delete measurement type {{ $t->name }}?">@csrf @method('DELETE')
+                        <button type="submit" class="outline contrast small">Delete<span class="sr-only"> {{ $t->name }}</span></button>
+                    </form>
                 @else
                     <small>Read only</small>
                 @endcan

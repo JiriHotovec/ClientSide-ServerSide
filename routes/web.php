@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ManageActionController;
 use App\Http\Controllers\ManageController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -28,8 +30,19 @@ Route::middleware('auth')->group(function () {
     Route::prefix('manage')->name('manage.')->group(function () {
         Route::get('/', [ManageController::class, 'overview'])->name('overview');
         Route::get('/devices', [ManageController::class, 'devices'])->name('devices');
+        Route::post('/devices', [ManageActionController::class, 'storeDevice'])->name('devices.store');
+        Route::put('/devices/{device}', [ManageActionController::class, 'updateDevice'])->name('devices.update');
+        Route::delete('/devices/{device}', [ManageActionController::class, 'destroyDevice'])->name('devices.destroy');
+        Route::patch('/devices/{device}/visibility', [ManageActionController::class, 'visibility'])->name('devices.visibility');
+        Route::post('/devices/{device}/token', [ManageActionController::class, 'token'])->name('devices.token');
+        Route::post('/types', [ManageActionController::class, 'storeType'])->name('types.store');
+        Route::put('/types/{measurementType}', [ManageActionController::class, 'updateType'])->name('types.update');
+        Route::delete('/types/{measurementType}', [ManageActionController::class, 'destroyType'])->name('types.destroy');
         Route::get('/devices/create', [ManageController::class, 'createDevice'])->name('devices.create');
         Route::get('/devices/{device}/edit', [ManageController::class, 'editDevice'])->name('devices.edit');
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
         Route::get('/types', [ManageController::class, 'types'])->name('types');
         Route::get('/types/create', [ManageController::class, 'createType'])->name('types.create');
         Route::get('/types/{measurementType}/edit', [ManageController::class, 'editType'])->name('types.edit');

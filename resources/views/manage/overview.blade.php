@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('title', 'Admin panel')
 @section('content')
 <header class="page-head head-row">
@@ -8,7 +8,6 @@
     </div>
     <a role="button" href="{{ route('manage.devices.create') }}">Add a device</a>
 </header>
-@include('manage._subnav')
 @include('manage._device-filters')
 <div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($devices->isEmpty())

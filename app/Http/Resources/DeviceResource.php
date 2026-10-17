@@ -14,7 +14,7 @@ class DeviceResource extends JsonResource
         $manage = $user && ($user->isAdmin() || $user->id === $this->user_id);
 
         return [
-            'id' => $this->id,
+            'id' => $this->uuid,
             'name' => $this->name,
             'description' => $this->description,
             'location' => $this->location,

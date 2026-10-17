@@ -6,7 +6,7 @@
     <p class="lead">Stations shared by their owners. Pick one to see its live readings and history.</p>
 </header>
 <form method="get" class="filters" role="search" aria-label="Search devices"
-      hx-get="{{ route('devices.index') }}" hx-trigger="input changed delay:300ms from:find input" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+      hx-get="{{ route('devices.index') }}" hx-trigger="input changed delay:600ms from:find input" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
     <label>Search <input type="search" name="q" value="{{ $search }}" placeholder="Name or location"></label>
     <noscript><button type="submit">Search</button></noscript>
 </form>

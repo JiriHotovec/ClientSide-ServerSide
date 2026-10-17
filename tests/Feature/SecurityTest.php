@@ -37,7 +37,7 @@ it('escapes user-supplied content in pages (XSS)', function () {
     [$device] = deviceWithData(['is_public' => true, 'name' => '<script>alert(1)</script>']);
 
     $this->get('/devices')->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false);
-    $this->get("/devices/{$device->id}")->assertDontSee('<script>alert(1)</script>', false);
+    $this->get("/devices/{$device->uuid}")->assertDontSee('<script>alert(1)</script>', false);
 });
 
 it('does not allow mass-assigning role or owner', function () {

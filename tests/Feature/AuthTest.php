@@ -4,7 +4,7 @@ use App\Models\User;
 
 it('registers a standard user and logs them in', function () {
     $this->post('/register', ['name' => 'Eve', 'email' => 'eve@example.com', 'password' => 'Secret12345', 'password_confirmation' => 'Secret12345'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('manage.overview'));
 
     $this->assertAuthenticated();
     expect(User::first()->role)->toBe('user');
@@ -23,13 +23,13 @@ it('rejects duplicate e-mails and weak passwords', function () {
         ->assertSessionHasErrors(['email', 'password']);
 });
 
-it('redirects a standard user to the personal dashboard after login', function () {
+it('redirects a standard user to the workspace after login', function () {
     $user = User::factory()->create();
 
-    $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('dashboard'));
+    $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('manage.overview'));
 });
 
-it('redirects an administrator to the administration interface after login', function () {
+it('redirects an administrator to the workspace after login', function () {
     $admin = User::factory()->admin()->create();
 
     $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect(route('manage.overview'));

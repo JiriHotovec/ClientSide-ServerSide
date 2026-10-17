@@ -15,11 +15,24 @@ use Illuminate\Support\Str;
 
 // user_id, is_public and the token hash are assigned explicitly by services, never mass-assigned.
 #[Fillable(['name', 'description', 'location', 'source_url', 'source_mapping', 'fetch_interval_min'])]
-#[Hidden(['ingest_token_hash'])]
+#[Hidden(['id', 'ingest_token_hash'])]
 class Device extends Model
 {
     /** @use HasFactory<DeviceFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Device $device) {
+            $device->uuid ??= (string) Str::uuid7();
+        });
+    }
+
+    /** URLs and the REST API address devices by UUIDv7, never by the sequential database id. */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 
     protected function casts(): array
     {

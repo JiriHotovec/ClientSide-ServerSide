@@ -1,0 +1,66 @@
+/* Workspace layout: one navigation, account menu in the top bar. Tokens come from app.css. */
+.admin-body { display: block; }
+.admin-shell { display: grid; min-height: 100svh; grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+.admin-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 0; padding: .5rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.admin-top .brand { margin: 0; font-size: 1.35rem; }
+
+.admin-nav { background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.admin-nav ul { display: flex; gap: .25rem; list-style: none; margin: 0; padding: .4rem 1rem; }
+.admin-nav li { margin: 0; flex: 0 0 auto; }
+.admin-nav a { display: flex; align-items: center; min-height: 44px; padding: 0 .9rem; border-radius: var(--radius); color: var(--muted); text-decoration: none; font-size: .9rem; font-weight: 500; white-space: nowrap; }
+.admin-nav a:hover { background: var(--soft); color: var(--ink); }
+.admin-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.admin-main { padding: 1.5rem 1.25rem 4rem; width: 100%; max-width: 80rem; margin-inline: auto; }
+
+/* Desktop: sidebar */
+@media (min-width: 64rem) {
+  .admin-shell { grid-template-columns: 15rem 1fr; grid-template-rows: auto 1fr; }
+  .admin-top { grid-column: 1 / -1; padding-inline: 1.75rem; }
+  .admin-nav { grid-row: 2; border-bottom: 0; border-right: 1px solid var(--line); overflow: visible; }
+  .admin-nav ul { flex-direction: column; position: sticky; top: 4rem; padding: 1.25rem 1rem; }
+  .admin-nav .nav-end { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .admin-main { grid-row: 2; grid-column: 2; padding: 2.25rem 2.5rem 5rem; }
+}
+@media (max-width: 63.99rem) { .admin-nav .nav-end { display: none; } } /* profile lives in the account menu on small screens */
+
+/* Account menu: reset the generic details/summary card styles from app.css */
+.user-menu { position: relative; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.user-menu[open] > summary { margin-bottom: 0; }
+.user-menu summary { display: flex; align-items: center; gap: .6rem; list-style: none; min-height: 44px; padding: .15rem .6rem .15rem .2rem; margin: 0; font-size: inherit; border-radius: 999px; border: 1px solid transparent; }
+.user-menu summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.user-menu summary:focus:not(:focus-visible) { outline: none; }
+.user-menu summary::-webkit-details-marker { display: none; }
+.user-menu summary:hover, .user-menu[open] summary { background: var(--soft); border-color: var(--line); }
+.avatar { display: inline-grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--accent); color: var(--accent-inverse); font-weight: 600; font-size: .85rem; letter-spacing: .02em; }
+.user-name { font-size: .9rem; font-weight: 500; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 40rem) { .user-name { display: none; } }
+.user-panel { position: absolute; right: 0; top: calc(100% + .5rem); min-width: 16rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 32px rgba(0, 0, 0, .14); padding: .5rem; display: grid; gap: .1rem; }
+.user-id { display: grid; margin: 0; padding: .6rem .75rem .8rem; border-bottom: 1px solid var(--line); margin-bottom: .35rem; }
+.user-id small { overflow-wrap: anywhere; }
+.user-panel a, .user-panel button { display: flex; align-items: center; min-height: 44px; width: 100%; padding: 0 .75rem; border: 0; border-radius: var(--radius); background: none; color: var(--ink); text-decoration: none; font-size: .9rem; text-align: left; }
+.user-panel a:hover, .user-panel button:hover { background: var(--soft); }
+.user-panel form { margin: 0; }
+
+/* Profile page */
+.profile-grid { display: grid; gap: 2.5rem; max-width: 60rem; }
+@media (min-width: 56rem) { .profile-grid { grid-template-columns: 1fr 1fr; } }
+.profile-grid section { padding: 1.5rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.profile-grid h2 { font-size: 1.35rem; }
+.profile-grid label { display: grid; gap: .3rem; margin-bottom: 1rem; font-size: .9rem; font-weight: 500; }
+.profile-grid input { min-height: 44px; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--ink); }
+.profile-grid input[aria-invalid="true"] { border-color: var(--danger); }
+.field-error { color: var(--danger); font-weight: 400; font-size: .85rem; }
+.profile-grid button { min-height: 44px; padding: 0 1.4rem; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-inverse); font-weight: 600; }
+.profile-grid button:hover { background: var(--accent-hover); }
+
+.exit-link { justify-content: space-between; gap: .5rem; }
+.exit-link .ext { flex: 0 0 auto; opacity: .75; }
+.admin-nav .exit-link { justify-content: flex-start; }
+.profile-grid .status { margin: 0 0 1rem; }
+.profile-grid [aria-busy="true"] button { opacity: .6; }
+
+.inline-form { display: inline; margin: 0; }
+.status-error { border-left-color: var(--danger); color: var(--ink); }
+.status-error ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.status-error:empty { display: none; }

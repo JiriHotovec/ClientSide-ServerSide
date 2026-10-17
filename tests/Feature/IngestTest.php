@@ -86,5 +86,5 @@ it('ingested data of a private device stays hidden from the public API', functio
     [$device] = deviceWithData(['is_public' => false]);
     $this->postJson('/api/ingest', ['measurements' => [['type' => 'temperature', 'value' => 9]]], ['Authorization' => 'Bearer '.tokenFor($device)])->assertCreated();
 
-    $this->getJson("/api/public/devices/{$device->id}/measurements")->assertNotFound();
+    $this->getJson("/api/public/devices/{$device->uuid}/measurements")->assertNotFound();
 });

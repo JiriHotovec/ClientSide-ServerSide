@@ -80,7 +80,7 @@ it('serves the filter results as a full page that htmx can select from', functio
 it('only offers editing of own devices on the edit page', function () {
     $device = Device::factory()->create();
 
-    $this->actingAs(User::factory()->create())->get("/manage/devices/{$device->id}/edit")->assertForbidden();
+    $this->actingAs(User::factory()->create())->get("/manage/devices/{$device->uuid}/edit")->assertForbidden();
 });
 
 it('hides private types of other users in the type list and the device form', function () {

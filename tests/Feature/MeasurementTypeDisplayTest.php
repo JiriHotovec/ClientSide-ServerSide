@@ -68,8 +68,8 @@ it('validates types against the device owner when an admin edits a device', func
     $adminsOwn = MeasurementType::factory()->create(['created_by' => User::factory()->admin()->create()->id]);
 
     $admin = User::factory()->admin()->create();
-    $this->actingAs($admin)->putJson("/api/devices/{$device->id}", ['types' => [$mine->id]])->assertOk();
-    $this->putJson("/api/devices/{$device->id}", ['types' => [$adminsOwn->id]])->assertUnprocessable();
+    $this->actingAs($admin)->putJson("/api/devices/{$device->uuid}", ['types' => [$mine->id]])->assertOk();
+    $this->putJson("/api/devices/{$device->uuid}", ['types' => [$adminsOwn->id]])->assertUnprocessable();
 });
 
 it('applies per-device overrides on top of the type defaults', function () {
@@ -80,7 +80,7 @@ it('applies per-device overrides on top of the type defaults', function () {
         'name' => 'D', 'is_public' => true, 'types' => [$type->id],
         'type_settings' => [$type->id => ['decimals' => 3, 'unit' => 'K', 'unit_position' => 'before', 'color' => null]],
     ])->assertCreated()->json('data.id');
-    Measurement::create(['device_id' => $id, 'measurement_type_id' => $type->id, 'value' => 1.23456, 'measured_at' => now()->subHour(), 'source' => 'ingest']);
+    Measurement::create(['device_id' => Device::where('uuid', $id)->value('id'), 'measurement_type_id' => $type->id, 'value' => 1.23456, 'measured_at' => now()->subHour(), 'source' => 'ingest']);
 
     $res = $this->getJson("/api/public/devices/{$id}/measurements?type=temperature")->assertOk();
 
@@ -89,7 +89,7 @@ it('applies per-device overrides on top of the type defaults', function () {
     // another device keeps the type defaults
     [$other] = deviceWithData(['is_public' => true]);
     $other->types()->sync([$type->id]);
-    $this->getJson("/api/public/devices/{$other->id}/measurements?type=temperature")->assertJsonPath('display.decimals', 1)->assertJsonPath('display.unit', '°C');
+    $this->getJson("/api/public/devices/{$other->uuid}/measurements?type=temperature")->assertJsonPath('display.decimals', 1)->assertJsonPath('display.unit', '°C');
 });
 
 it('rejects invalid per-device overrides', function () {

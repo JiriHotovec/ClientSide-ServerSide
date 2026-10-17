@@ -33,7 +33,7 @@ class PullService
     {
         return Device::query()
             ->whereNotNull('source_url')
-            ->when($deviceId, fn ($q) => $q->whereKey($deviceId))
+            ->when($deviceId, fn ($q) => $q->where('uuid', $deviceId))
             ->get()
             ->filter(fn (Device $d) => $force || $deviceId || $this->isDue($d))
             ->map(fn (Device $d) => $this->pull($d))
@@ -64,13 +64,13 @@ class PullService
             $stored = $this->ingest->store($device, $this->map($device->source_mapping ?? [], $json), 'pull');
             $device->forceFill(['last_fetched_at' => now(), 'last_error' => null])->save();
 
-            return ['device' => $device->id, 'ok' => true, 'stored' => $stored];
+            return ['device' => $device->uuid, 'ok' => true, 'stored' => $stored];
         } catch (Throwable $e) {
             $message = $e instanceof \InvalidArgumentException || $e instanceof \RuntimeException
                 ? $e->getMessage() : 'Data source is unavailable.';
             $device->forceFill(['last_fetched_at' => now(), 'last_error' => mb_substr($message, 0, 500)])->save();
 
-            return ['device' => $device->id, 'ok' => false, 'error' => $message];
+            return ['device' => $device->uuid, 'ok' => false, 'error' => $message];
         }
     }
 

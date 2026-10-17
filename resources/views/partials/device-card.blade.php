@@ -1,5 +1,5 @@
 <li>
-    <a class="device-card" href="{{ $href }}">
+    <a class="device-card" href="{{ $href }}" hx-boost="false">
         <span class="dc-title">{{ $device->name }}</span>
         <span class="dc-loc">{{ $device->location ?: 'Location not specified' }}@if(!empty($owner)), {{ $device->owner->name }}@endif</span>
         @if(auth()->check())<span><span class="badge {{ $device->is_public ? '' : 'badge-private' }}">{{ $device->is_public ? 'Public' : 'Private' }}</span></span>@endif

@@ -21,6 +21,7 @@ return new class extends Migration
 
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique(); // public identifier (UUIDv7) used in URLs instead of the numeric id
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name', 100);
             $table->string('description', 500)->nullable();

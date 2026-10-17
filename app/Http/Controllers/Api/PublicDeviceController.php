@@ -17,14 +17,14 @@ class PublicDeviceController extends Controller
         return DeviceResource::collection(Device::public()->with('types')->orderBy('name')->get());
     }
 
-    public function show(int $id)
+    public function show(string $id)
     {
-        return new DeviceResource(Device::public()->with('types')->findOrFail($id));
+        return new DeviceResource(Device::public()->with('types')->where('uuid', $id)->firstOrFail());
     }
 
-    public function measurements(int $id, MeasurementQueryRequest $request, MeasurementService $service)
+    public function measurements(string $id, MeasurementQueryRequest $request, MeasurementService $service)
     {
-        $device = Device::public()->with('types')->findOrFail($id);
+        $device = Device::public()->with('types')->where('uuid', $id)->firstOrFail();
 
         return MeasurementController::respond($device, $request, $service);
     }

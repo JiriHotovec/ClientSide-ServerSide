@@ -27,7 +27,8 @@ Styling uses **Pico CSS v2** (semantic, mobile-first, light/dark) plus a small `
 ## 2. Asynchronous data loading
 - **Fetch API** (`dashboard.js`): loads `GET …/measurements?period=24h|7d&type=<key>`; **one JSON response feeds both chart (Chart.js) and table** (A3). Handles loading (`aria-busy` + live region), empty period, missing values (`null` → gap in chart, "Missing value" in table, never `0`), HTTP errors and an unavailable external source (`source_status`).
 - **htmx**: personal dashboard device switch (`/dashboard/devices/{id}` fragment), device list refresh, create/edit form loading. htmx runs with `allowEval:false`.
-- **Fetch + REST** (`manage.js`): create/update/delete device, visibility toggle, token regeneration, create measurement type; after success the htmx fragments are refreshed.
+- **htmx forms** (workspace, login, registration, profile): forms are normal server-side POST/PUT/DELETE forms enhanced with `hx-boost`. The server validates and answers with a redirect (or `HX-Redirect` for login/registration, `422` + re-rendered card for the profile); htmx swaps `#main` and the sidebar. Without JavaScript the same flow works as plain form posts. Handled in `ManageActionController`, `AuthController`, `ProfileController`; client glue is only `public/js/forms.js` (error messages) and `manage.js` (preview, menu).
+- The JSON REST API (`routes/rest.php`) is unchanged and uses the same services/policies; chart data on dashboards is loaded with the Fetch API.
 
 ## 3. Database structure
 
@@ -81,7 +82,7 @@ Measurement response: `{device, type{key,name,unit}, period, from, to, source_st
 For hosts without shell cron. Header `Authorization: Bearer <CRON_SECRET>` or `X-Cron-Token: <CRON_SECRET>` (compared with `hash_equals`; secrets in the query string are **not** accepted). Optional `?device=<id>`, `?force=1`. Returns `{devices, ok, failed, results[]}`. Equivalent CLI: `php artisan meteoview:fetch [--device=ID] [--force]`; the Laravel scheduler (`routes/console.php`) runs it every minute (needs the usual `* * * * * php artisan schedule:run`), each device honours its own `fetch_interval_min`.
 
 ## 4b. Administration pages and display settings
-Pages (all behind login; users see their own devices, administrators can switch to "All devices"): `/manage` (card overview, paginated, filterable), `/manage/devices` (list + data source status), `/manage/devices/create` and `/{id}/edit`, `/manage/types` (list), `/manage/types/create` and `/{id}/edit`. Search, filters and pagination are plain GET requests enhanced with htmx (`hx-select="#results"`, URL is pushed); they also work without JavaScript. Saving goes through the REST API.
+Pages (all behind login; users see their own devices, administrators can switch to "All devices"): `/manage` (card overview, paginated, filterable), `/manage/devices` (list + data source status), `/manage/devices/create` and `/{id}/edit`, `/manage/types` (list), `/manage/types/create` and `/{id}/edit`. Search, filters and pagination are plain GET requests enhanced with htmx (`hx-select="#results"`, URL is pushed); they also work without JavaScript. Saving uses server-side forms (htmx) that call the same services as the REST API.
 
 **Measurement types are global or private.** Global (`is_public`) types are usable by everybody and only administrators can create/make them global; types created by users are private to the creator (and visible to admins). A device can only use types visible to its owner.
 
@@ -106,7 +107,7 @@ Skip link, landmarks, one `h1` per page, `lang`, labelled controls, `aria-curren
 ## 8. Testing
 `composer test` (Pest 5 on PHPUnit, in-memory SQLite) · `composer test:coverage` (PCOV, fails below 80 %).
 
-Latest result: **144 tests, 425 assertions, all passing; line coverage 96.6 %.**
+Latest result: **178 tests, all passing.**
 
 | File | Covers |
 |---|---|
