@@ -23,7 +23,7 @@ class MeasurementController extends Controller
             : $device->types->first();
 
         if (! $type) {
-            return response()->json(['message' => 'This device has no such dataset.'], 404);
+            return response()->json(['message' => __('This device has no such dataset.')], 404);
         }
 
         return response()->json($service->series($device, $type, $request->range()));

@@ -70,21 +70,21 @@ class DeviceRequest extends FormRequest
     {
         return [function (Validator $v) {
             if ($this->input('source_mapping') === 'invalid') {
-                $v->errors()->add('source_mapping', 'The mapping must be valid JSON.');
+                $v->errors()->add('source_mapping', __('The mapping must be valid JSON.'));
             }
             // Types must be visible to the device owner (global ones or the owner's private ones).
             $owner = $this->route('device')?->owner ?? $this->user();
             $allowed = \App\Models\MeasurementType::visibleTo($owner)->whereIn('id', $this->input('types', []))->pluck('id')->all();
             foreach ($this->input('types', []) as $i => $id) {
                 if (! in_array($id, $allowed)) {
-                    $v->errors()->add("types.$i", 'This measurement type is not available for the device owner.');
+                    $v->errors()->add("types.$i", __('This measurement type is not available for the device owner.'));
                 }
             }
             if ($url = $this->input('source_url')) {
                 try {
                     app(UrlGuard::class)->check($url);
                 } catch (\InvalidArgumentException $e) {
-                    $v->errors()->add('source_url', $e->getMessage());
+                    $v->errors()->add('source_url', __($e->getMessage())); // UrlGuard messages are translation keys
                 }
             }
         }];

@@ -42,7 +42,7 @@ class MeasurementTypeController extends Controller
     {
         $this->authorize('delete', $measurementType);
         if ($measurementType->isInUse()) {
-            return response()->json(['message' => 'This measurement type is in use and cannot be deleted.'], 409);
+            return response()->json(['message' => __('This measurement type is in use and cannot be deleted.')], 409);
         }
         $measurementType->delete();
 

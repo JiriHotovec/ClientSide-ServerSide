@@ -13,7 +13,7 @@ class CronController extends Controller
     {
         $secret = (string) config('services.cron.secret');
         $given = (string) ($request->bearerToken() ?: $request->header('X-Cron-Token'));
-        abort_unless($secret !== '' && hash_equals($secret, $given), 401, 'Invalid cron token.');
+        abort_unless($secret !== '' && hash_equals($secret, $given), 401, __('Invalid cron token.'));
 
         $results = $pull->run($request->query('device'), $request->boolean('force'));
 

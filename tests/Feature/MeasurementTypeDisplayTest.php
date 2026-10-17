@@ -118,7 +118,7 @@ it('renders formatted values on device cards using the display settings', functi
     $device->types()->sync([$type->id]);
     Measurement::create(['device_id' => $device->id, 'measurement_type_id' => $type->id, 'value' => 3.14159, 'measured_at' => now()->subMinutes(5), 'source' => 'ingest']);
 
-    $this->get('/devices')->assertSee("€\u{00A0}3.14", false);
+    $this->get('/en/devices')->assertSee("€\u{00A0}3.14", false);
 });
 
 it('stores a category on a type and rejects unknown categories', function () {

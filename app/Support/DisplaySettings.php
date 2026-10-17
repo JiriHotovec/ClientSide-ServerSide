@@ -27,9 +27,9 @@ class DisplaySettings
     public static function format(?float $value, array $d, bool $withUnit = true): string
     {
         if ($value === null) {
-            return 'Missing value';
+            return __('Missing value');
         }
-        $n = number_format($value, $d['decimals'], '.', '');
+        $n = number_format($value, $d['decimals'], app()->getLocale() === 'cs' ? ',' : '.', '');
         if (! $withUnit || $d['unit_position'] === 'none' || ($d['unit'] ?? '') === '') {
             return $n;
         }

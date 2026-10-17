@@ -1,18 +1,19 @@
 @extends('layouts.app')
-@section('title', 'My dashboard')
+@section('title', __('My dashboard'))
+@section('noindex', '1')
 @section('content')
 <header class="page-head">
-    <h1>My dashboard</h1>
-    <p class="lead">A closer look at your devices and the world around them.</p>
+    <h1>{{ __('My dashboard') }}</h1>
+    <p class="lead">{{ __('A closer look at your devices and the world around them.') }}</p>
 </header>
 @if($devices->isEmpty())
-    <p role="status">You have no devices yet. <a href="{{ route('manage.devices') }}">Add your first device</a>.</p>
+    <p role="status">{{ __('You have no devices yet.') }} <a href="{{ route('manage.devices') }}">{{ __('Add your first device') }}</a>.</p>
 @else
-    <label for="device-switch" class="dashboard-switch">Device
+    <label for="device-switch" class="dashboard-switch">{{ __('Device') }}
         <select id="device-switch" name="device"
                 hx-get="{{ url('/dashboard/devices') }}" hx-trigger="change" hx-target="#panel" hx-swap="innerHTML"
                 data-base="{{ url('/dashboard/devices') }}">
-            @foreach($devices as $d)<option value="{{ $d->uuid }}">{{ $d->name }}{{ $d->is_public ? '' : ' (private)' }}</option>@endforeach
+            @foreach($devices as $d)<option value="{{ $d->uuid }}">{{ $d->name }}{{ $d->is_public ? '' : ' ('.__('private').')' }}</option>@endforeach
         </select>
     </label>
     <div id="panel" aria-live="polite">

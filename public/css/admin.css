@@ -64,3 +64,8 @@
 .status-error { border-left-color: var(--danger); color: var(--ink); }
 .status-error ul { margin: .4rem 0 0; padding-left: 1.2rem; }
 .status-error:empty { display: none; }
+
+/* Language switch inside the account menu */
+.menu-lang { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem .75rem; margin: .15rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.menu-lang::before { content: attr(data-label); font-size: .85rem; color: var(--muted); }
+.user-panel button { justify-content: flex-start; }

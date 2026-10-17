@@ -20,7 +20,7 @@ class AuthController extends Controller
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             // Generic message: do not reveal whether the e-mail exists.
-            return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
+            return back()->withErrors(['email' => __('These credentials do not match our records.')])->onlyInput('email');
         }
 
         $request->session()->regenerate(); // prevents session fixation

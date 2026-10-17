@@ -8,17 +8,33 @@ use App\Http\Controllers\PageController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PageController::class, 'welcome'])->name('welcome');
-Route::get('/devices', [PageController::class, 'publicDevices'])->name('devices.index');
-Route::get('/devices/{device}', [PageController::class, 'publicDevice'])->name('devices.show');
-Route::get('/devices/{device}/table/{type}', [PageController::class, 'dataTable'])->name('devices.table');
+Route::post('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'update'])->name('locale');
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+// Public, indexable pages live under a language prefix (/en/..., /cs/...) so every language has its own URL.
+// SetLocale fills the {locale} parameter automatically when routes are generated (route('devices.index')).
+Route::prefix('{locale}')->whereIn('locale', \App\Support\Locales::codes())->group(function () {
+    Route::get('/', [PageController::class, 'welcome'])->name('welcome');
+    Route::get('/devices', [PageController::class, 'publicDevices'])->name('devices.index');
+    Route::get('/devices/{device}', [PageController::class, 'publicDevice'])->name('devices.show');
+    Route::get('/devices/{device}/table/{type}', [PageController::class, 'dataTable'])->name('devices.table');
+
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+        Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+    });
 });
+
+// Old and language-less addresses redirect to the visitor's language (permanent for the stable paths).
+Route::get('/', fn () => redirect()->route('welcome'));
+Route::get('/devices', fn () => redirect()->route('devices.index', request()->query(), 301));
+Route::get('/devices/{uuid}', fn (string $uuid) => redirect()->route('devices.show', ['device' => $uuid], 301));
+Route::get('/login', fn () => redirect()->route('login'))->middleware('guest');
+Route::get('/register', fn () => redirect()->route('register'))->middleware('guest');
+
+Route::get('/sitemap.xml', [\App\Http\Controllers\SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('robots');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

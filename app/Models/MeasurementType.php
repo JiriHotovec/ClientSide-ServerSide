@@ -15,6 +15,23 @@ class MeasurementType extends Model
     /** @use HasFactory<MeasurementTypeFactory> */
     use HasFactory;
 
+    /**
+     * Built-in (system) types are translated by key (lang/{locale}/measurement.php); types created by users
+     * keep the single name they were created with, so nobody has to write both languages.
+     */
+    protected function name(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::get(function ($value, array $attributes) {
+            if (empty($attributes['is_system'])) {
+                return $value;
+            }
+            $key = 'measurement.types.'.($attributes['key'] ?? '');
+            $translated = __($key);
+
+            return $translated === $key ? $value : $translated;
+        });
+    }
+
     protected function casts(): array
     {
         return ['is_system' => 'boolean', 'is_public' => 'boolean', 'unit_space' => 'boolean', 'decimals' => 'integer', 'y_min' => 'float', 'y_max' => 'float'];

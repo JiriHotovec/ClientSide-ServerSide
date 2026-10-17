@@ -1,18 +1,19 @@
 @extends('layouts.app')
-@section('title', 'Public devices')
+@section('title', __('Public devices'))
+@section('description', __('Stations shared by their owners. Pick one to see its live readings and history.'))
 @section('content')
 <header class="page-head">
-    <h1>Public devices</h1>
-    <p class="lead">Stations shared by their owners. Pick one to see its live readings and history.</p>
+    <h1>{{ __('Public devices') }}</h1>
+    <p class="lead">{{ __('Stations shared by their owners. Pick one to see its live readings and history.') }}</p>
 </header>
-<form method="get" class="filters" role="search" aria-label="Search devices"
+<form method="get" class="filters" role="search" aria-label="{{ __('Search devices') }}"
       hx-get="{{ route('devices.index') }}" hx-trigger="input changed delay:600ms from:find input" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
-    <label>Search <input type="search" name="q" value="{{ $search }}" placeholder="Name or location"></label>
-    <noscript><button type="submit">Search</button></noscript>
+    <label>{{ __('Search') }} <input type="search" name="q" value="{{ $search }}" placeholder="{{ __('Name or location') }}"></label>
+    <noscript><button type="submit">{{ __('Search') }}</button></noscript>
 </form>
 <div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($devices->isEmpty())
-    <p role="status" class="empty">{{ $search !== '' ? 'No public device matches your search.' : 'No public devices yet.' }} @guest<a href="{{ route('register') }}">Create an account</a> and share one.@endguest</p>
+    <p role="status" class="empty">{{ $search !== '' ? __('No public device matches your search.') : __('No public devices yet.') }} @guest<a href="{{ route('register') }}">{{ __('Create an account') }}</a> {{ __('and share one.') }}@endguest</p>
 @else
 <ul class="device-grid" role="list">
     @foreach($devices as $device)

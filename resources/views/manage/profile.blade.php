@@ -1,9 +1,9 @@
 @extends('layouts.admin')
-@section('title', 'Profile')
+@section('title', __('Profile'))
 @section('content')
 <header class="page-head">
-    <h1>Profile</h1>
-    <p class="lead">Your account details and password.</p>
+    <h1>{{ __('Profile') }}</h1>
+    <p class="lead">{{ __('Your account details and password.') }}</p>
 </header>
 <div class="profile-grid">
     @include('manage._profile-details', ['err' => $errors->getBag('details')->messages(), 'old' => old(), 'done' => session('details_done')])

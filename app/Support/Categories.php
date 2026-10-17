@@ -20,6 +20,6 @@ class Categories
 
     public static function label(string $key): string
     {
-        return self::ALL[$key] ?? self::ALL['other'];
+        return __(self::ALL[$key] ?? self::ALL['other']);
     }
 }

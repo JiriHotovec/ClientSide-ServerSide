@@ -117,21 +117,21 @@ it('forbids editing foreign types', function () {
 it('tells htmx to navigate after a successful login or registration', function () {
     $user = User::factory()->create();
 
-    $this->post('/login', ['email' => $user->email, 'password' => 'password'], ['HX-Request' => 'true'])->assertNoContent()->assertHeader('HX-Redirect', route('manage.overview'));
+    $this->post('/en/login', ['email' => $user->email, 'password' => 'password'], ['HX-Request' => 'true'])->assertNoContent()->assertHeader('HX-Redirect', route('manage.overview'));
 });
 
 it('redirects htmx registration to the workspace and shows errors inline otherwise', function () {
-    $this->post('/register', ['name' => 'Eve', 'email' => 'eve@example.com', 'password' => 'Secret12345', 'password_confirmation' => 'Secret12345'], ['HX-Request' => 'true'])
+    $this->post('/en/register', ['name' => 'Eve', 'email' => 'eve@example.com', 'password' => 'Secret12345', 'password_confirmation' => 'Secret12345'], ['HX-Request' => 'true'])
         ->assertNoContent()->assertHeader('HX-Redirect', route('manage.overview'));
 });
 
 it('boosts the auth and workspace forms with htmx', function () {
-    $this->get('/login')->assertSee('hx-boost="true"', false)->assertSee('hx-select="#main"', false);
+    $this->get('/en/login')->assertSee('hx-boost="true"', false)->assertSee('hx-select="#main"', false);
     $this->actingAs(User::factory()->create())->get('/manage/devices/create')->assertSee('hx-boost="true"', false)->assertSee('name="_form"', false);
 });
 
 it('does not boost device card links, which lead to a different page than the list', function () {
     Device::factory()->public()->create();
 
-    $this->get('/devices')->assertSee('class="device-card"', false)->assertSee('hx-boost="false"', false);
+    $this->get('/en/devices')->assertSee('class="device-card"', false)->assertSee('hx-boost="false"', false);
 });

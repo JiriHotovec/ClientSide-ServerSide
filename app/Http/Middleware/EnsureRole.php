@@ -10,7 +10,7 @@ class EnsureRole
 {
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        abort_unless($request->user()?->role === $role, 403, 'This area is not available for your role.');
+        abort_unless($request->user()?->role === $role, 403, __('This area is not available for your role.'));
 
         return $next($request);
     }

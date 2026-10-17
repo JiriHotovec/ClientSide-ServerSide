@@ -28,7 +28,7 @@ class ProfileController extends Controller
 
         $request->user()->update($validator->validated());
 
-        return $this->respond($request, 'manage._profile-details', 'details', [], [], 'Profile updated.');
+        return $this->respond($request, 'manage._profile-details', 'details', [], [], __('Profile updated.'));
     }
 
     public function password(Request $request)
@@ -45,7 +45,7 @@ class ProfileController extends Controller
         $request->user()->update(['password' => $request->input('password')]);
         $request->session()->regenerate();
 
-        return $this->respond($request, 'manage._profile-password', 'password', [], [], 'Password changed.');
+        return $this->respond($request, 'manage._profile-password', 'password', [], [], __('Password changed.'));
     }
 
     private function respond(Request $request, string $partial, string $bag, array $errors, array $old, ?string $done = null)

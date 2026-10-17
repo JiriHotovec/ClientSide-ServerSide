@@ -5,13 +5,13 @@ use App\Models\User;
 it('has the page structure assistive technology expects (WCAG 2.2)', function (string $url) {
     $html = $this->get($url)->assertOk()->getContent();
 
-    expect($html)->toContain('<html lang="en">')
+    expect($html)->toMatch('/<html lang="(en|cs)">/')
         ->toContain('class="skip-link" href="#main"')
         ->toContain('<main id="main"')
-        ->toContain('aria-label="Main"')
+        ->toMatch('/aria-label="(Main|Hlavní)"/')
         ->toMatch('/<title>[^<]+<\/title>/')
         ->and(substr_count($html, '<h1'))->toBe(1);
-})->with(['/', '/devices', '/login', '/register']);
+})->with(['/en', '/en/devices', '/en/login', '/en/register', '/cs']);
 
 it('labels every form control on login and register', function (string $url) {
     $html = $this->get($url)->getContent();
@@ -24,7 +24,7 @@ it('labels every form control on login and register', function (string $url) {
 it('renders the dashboard panel with live regions, a chart text alternative and a data table popup', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
-    $html = $this->get("/devices/{$device->uuid}")->getContent();
+    $html = $this->get("/en/devices/{$device->uuid}")->getContent();
 
     expect($html)->toContain('aria-live="polite"')
         ->toContain('<dialog')
@@ -34,7 +34,7 @@ it('renders the dashboard panel with live regions, a chart text alternative and 
 });
 
 it('marks the current page in the navigation', function () {
-    $this->get('/devices')->assertSee('aria-current="page"', false);
+    $this->get('/en/devices')->assertSee('aria-current="page"', false);
 });
 
 it('exposes accessible names on management actions', function () {
@@ -45,9 +45,9 @@ it('exposes accessible names on management actions', function () {
 });
 
 it('reports validation errors with aria-invalid and role=alert', function () {
-    $this->from('/register')->post('/register', ['name' => '', 'email' => 'bad', 'password' => 'x'])->assertRedirect('/register');
+    $this->from('/en/register')->post('/en/register', ['name' => '', 'email' => 'bad', 'password' => 'x'])->assertRedirect('/en/register');
 
-    $this->get('/register')->assertSee('aria-invalid="true"', false)->assertSee('role="alert"', false);
+    $this->get('/en/register')->assertSee('aria-invalid="true"', false)->assertSee('role="alert"', false);
 });
 
 it('groups datasets by category into an inline group row with one chart card per dataset', function () {
@@ -56,7 +56,7 @@ it('groups datasets by category into an inline group row with one chart card per
     $device->types()->attach(\App\Models\MeasurementType::create(['key' => 'humidity', 'name' => 'Humidity', 'unit' => '%', 'category' => 'weather']));
     $device->types()->attach(\App\Models\MeasurementType::create(['key' => 'co2', 'name' => 'CO2', 'unit' => 'ppm', 'category' => 'air']));
 
-    $html = $this->get("/devices/{$device->uuid}")->getContent();
+    $html = $this->get("/en/devices/{$device->uuid}")->getContent();
 
     expect(substr_count($html, 'data-group-menu'))->toBe(1)
         ->and(substr_count($html, 'data-card'))->toBe(3) // one card per dataset
@@ -69,7 +69,7 @@ it('groups datasets by category into an inline group row with one chart card per
 it('shows a plain heading instead of a menu when all datasets share one category', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
-    $html = $this->get("/devices/{$device->uuid}")->getContent();
+    $html = $this->get("/en/devices/{$device->uuid}")->getContent();
 
     expect($html)->not->toContain('data-group-menu')->toContain('toolbar-title')->toContain('data-card');
 });
@@ -77,7 +77,7 @@ it('shows a plain heading instead of a menu when all datasets share one category
 it('offers a magnifier per chart with an enlarged chart dialog and a floating custom range form', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
-    $html = $this->get("/devices/{$device->uuid}")->getContent();
+    $html = $this->get("/en/devices/{$device->uuid}")->getContent();
 
     expect(substr_count($html, 'data-zoom '))->toBeGreaterThanOrEqual(1)
         ->and($html)->toContain('aria-label="Enlarge chart of Temperature"')->toContain('data-zoom-dialog')->toContain('data-zoom-canvas')

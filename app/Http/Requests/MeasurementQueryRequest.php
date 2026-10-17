@@ -31,7 +31,7 @@ class MeasurementQueryRequest extends FormRequest
         return [function (Validator $v) {
             if ($v->errors()->isEmpty() && filled($this->query('from')) && filled($this->query('to'))) {
                 if (TimeRange::custom($this->query('from'), $this->query('to'), (int) $this->query('tz', 0))->days() > TimeRange::MAX_DAYS) {
-                    $v->errors()->add('to', 'The date range can cover at most '.TimeRange::MAX_DAYS.' days.');
+                    $v->errors()->add('to', __('The date range can cover at most :days days.', ['days' => TimeRange::MAX_DAYS]));
                 }
             }
         }];

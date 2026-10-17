@@ -2,12 +2,13 @@
 (() => {
   'use strict';
 
-  const fmtTime = (iso) => new Date(iso).toLocaleString(undefined, {
+  const t = (k, v) => MV.t(k, v);
+  const fmtTime = (iso) => new Date(iso).toLocaleString(MV.locale, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
   });
   // Formats a value with the dataset's display settings (decimals, unit position/spacing).
   const fmtValue = (v, d, withUnit = true) => {
-    const n = new Intl.NumberFormat(undefined, { minimumFractionDigits: d.decimals, maximumFractionDigits: d.decimals }).format(v);
+    const n = new Intl.NumberFormat(MV.locale, { minimumFractionDigits: d.decimals, maximumFractionDigits: d.decimals }).format(v);
     if (!withUnit || !d.unit || d.unit_position === 'none') return n;
     const sp = d.unit_space ? '\u00a0' : '';
     return d.unit_position === 'before' ? d.unit + sp + n : n + sp + d.unit;
@@ -33,9 +34,9 @@
       },
       options: {
         animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? 'Missing value' : fmtValue(i.raw, d.display)) } } },
+        plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? t('Missing value') : fmtValue(i.raw, d.display)) } } },
         scales: {
-          x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
+          x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(MV.locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
           y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
         },
       },
@@ -68,7 +69,7 @@
       loadedKey = null;
       last = null;
       zoomBtn.hidden = true;
-      status.textContent = 'Loading measurements…';
+      status.textContent = t('Loading measurements…');
       status.setAttribute('aria-busy', 'true');
       warning.hidden = true;
       hideAll();
@@ -80,15 +81,15 @@
         if (!res.ok) {
           const body = res.status === 422 ? await res.json().catch(() => null) : null;
           if (body?.errors) throw new Error(Object.values(body.errors).flat()[0]);
-          const msg = { 401: 'Please log in again.', 403: 'You are not allowed to view this device.', 404: 'This dataset or device is not available.' }[res.status]
-            || 'The server could not deliver the data right now. Please try again later.';
+          const msg = { 401: t('Please log in again.'), 403: t('You are not allowed to view this device.'), 404: t('This dataset or device is not available.') }[res.status]
+            || t('The server could not deliver the data right now. Please try again later.');
           throw new Error(msg);
         }
         render(await res.json());
         loadedKey = state.key();
       } catch (err) {
         if (err.name === 'AbortError') return;
-        status.textContent = err instanceof TypeError ? 'Could not reach the server. Check your connection and try again.' : err.message;
+        status.textContent = err instanceof TypeError ? t('Could not reach the server. Check your connection and try again.') : err.message;
       } finally {
         status.removeAttribute('aria-busy');
       }
@@ -97,16 +98,16 @@
     function render(d) {
       const label = `${d.type.name} (${d.type.unit})`;
       if (!d.source_status.ok) {
-        warning.textContent = `The external data source is currently unavailable: ${d.source_status.message} Showing the last stored measurements.`;
+        warning.textContent = t('The external data source is currently unavailable: :message Showing the last stored measurements.', { message: d.source_status.message });
         warning.hidden = false;
       }
 
       if (d.summary.count === 0) {
-        status.textContent = `No measurements of ${d.type.name} in the selected period. Missing data is not shown as zero.`;
+        status.textContent = t('No measurements of :name in the selected period. Missing data is not shown as zero.', { name: d.type.name });
         return;
       }
       // Success needs no message: the chart speaks for itself. Only explain the case without any valid value.
-      status.textContent = d.summary.count - d.summary.missing === 0 ? 'No valid values in this period.' : '';
+      status.textContent = d.summary.count - d.summary.missing === 0 ? t('No valid values in this period.') : '';
       renderStats(d);
       last = d;
       zoomBtn.hidden = !window.Chart;
@@ -170,10 +171,10 @@
       if (!d || !window.Chart) return;
       const label = `${d.type.name} (${d.type.unit})`;
       zoom.querySelector('[data-zoom-title]').textContent = d.type.name;
-      zoom.querySelector('[data-zoom-canvas]').setAttribute('aria-label', `Enlarged chart of ${d.type.name}. Open the data table for exact values.`);
+      zoom.querySelector('[data-zoom-canvas]').setAttribute('aria-label', t('Enlarged chart of :name. Open the data table for exact values.', { name: d.type.name }));
       const stats = zoom.querySelector('[data-zoom-stats]');
-      stats.replaceChildren(...[['Lowest', 'min'], ['Average', 'avg'], ['Highest', 'max']].map(([t, k]) => {
-        const div = el('div'); div.append(el('dt', t), el('dd', card.querySelector(`[data-stat="${k}"]`).textContent)); return div;
+      stats.replaceChildren(...[['Lowest', 'min'], ['Average', 'avg'], ['Highest', 'max']].map(([label2, k]) => {
+        const div = el('div'); div.append(el('dt', t(label2)), el('dd', card.querySelector(`[data-stat="${k}"]`).textContent)); return div;
       }));
       zoom.showModal();
       zoomChart?.destroy();
@@ -216,9 +217,9 @@
       const from = form.elements.from.value;
       const to = form.elements.to.value;
       err.textContent = '';
-      if (!from || !to) { err.textContent = 'Choose both dates and times.'; return; }
-      if (from >= to) { err.textContent = 'The start must be before the end.'; return; }
-      if ((Date.parse(to) - Date.parse(from)) / 86400000 > 92) { err.textContent = 'Choose a range of at most 92 days.'; return; }
+      if (!from || !to) { err.textContent = t('Choose both dates and times.'); return; }
+      if (from >= to) { err.textContent = t('The start must be before the end.'); return; }
+      if ((Date.parse(to) - Date.parse(from)) / 86400000 > 92) { err.textContent = t('Choose a range of at most 92 days.'); return; }
       Object.assign(state, { period: 'custom', from, to });
       form.hidden = true;
       customBtn.setAttribute('aria-expanded', 'false');
@@ -257,7 +258,7 @@
   const syncExpand = (dialog) => {
     const on = dialog.classList.contains('is-wide');
     const b = dialog.querySelector('[data-expand]');
-    if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Shrink' : 'Enlarge'; }
+    if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? t('Shrink') : t('Enlarge'); }
   };
   document.addEventListener('click', (e) => {
     const b = e.target.closest?.('[data-expand]');

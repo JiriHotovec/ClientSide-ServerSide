@@ -58,7 +58,7 @@ it('paginates the panel and keeps filters in the page links', function () {
     Device::factory()->count(12)->for($user, 'owner')->create(['location' => 'Brno']);
 
     $res = $this->actingAs($user)->get('/manage?q=Brno')->assertSee('Showing 1–9 of 12');
-    $res->assertSee('q=Brno', false)->assertSee('aria-label="Pagination"', false);
+    $res->assertSee('q=Brno', false)->assertSee('aria-label="Page navigation"', false);
     $this->get('/manage?q=Brno&page=2')->assertSee('Showing 10–12 of 12');
 });
 
@@ -66,8 +66,8 @@ it('paginates and searches the public device list', function () {
     Device::factory()->count(11)->public()->create(['location' => 'Ostrava']);
     Device::factory()->public()->create(['name' => 'Needle', 'location' => 'Kladno']);
 
-    $this->get('/devices')->assertSee('Showing 1–9 of 12');
-    $this->get('/devices?q=Needle')->assertSee('Needle')->assertDontSee('Ostrava');
+    $this->get('/en/devices')->assertSee('Showing 1–9 of 12');
+    $this->get('/en/devices?q=Needle')->assertSee('Needle')->assertDontSee('Ostrava');
 });
 
 it('serves the filter results as a full page that htmx can select from', function () {

@@ -88,6 +88,13 @@ Pages (all behind login; users see their own devices, administrators can switch 
 
 **Display settings** live on the type (defaults) and can be overridden per device (`device_measurement_type` pivot, `null` = inherit): `unit`, `unit_position` (before/after/none), `unit_space`, `decimals`, `color`, `chart_type` (line/bar), `y_min`, `y_max`. The measurement API returns the resolved `display` object, which the chart, table and cards use; `type_settings` on `POST/PUT /api/devices` carries the overrides, validated like the type defaults.
 
+## 4c. Languages (CS/EN) and SEO
+- **Only the interface is translated.** Names, locations and descriptions of devices and user-created measurement types stay as their authors wrote them, so nobody has to fill in two languages. Built-in measurement types (temperature, humidity, ...) are translated by key (`lang/*/measurement.php`); categories, validation messages, flash messages, API messages and the browser scripts' texts are translated too (`lang/cs.json`, `lang/cs/validation.php`). A test fails when a key used in code has no Czech translation.
+- **One URL per language for public pages:** `/en`, `/cs`, `/en/devices`, `/cs/devices/{uuid}`, login and registration. `/`, `/devices`, `/devices/{uuid}`, `/login`, `/register` redirect to the visitor's language. Workspace pages (`/manage`, `/dashboard`) are not prefixed and follow the saved preference.
+- **Language detection (SetLocale middleware):** URL prefix, then the account setting (`users.locale`), session, cookie, `Accept-Language`, default English. The switch on public pages is a normal link (crawlable); in the workspace it is a form and stores the choice on the account.
+- **SEO:** unique `<title>` and meta description per page, `<link rel="canonical">`, `hreflang` alternates (+ `x-default`), Open Graph tags, `noindex` for login, registration, dashboard and workspace, `sitemap.xml` (every public page in both languages with alternates and `lastmod`, private devices excluded) and `robots.txt` (hides workspace, API and data popups).
+- Numbers use a decimal comma in Czech; relative times ("před 10 minutami") are localized by Carbon.
+
 ## 5. External API integration status
 - **Integration-ready, generic JSON pull**: a device can define `source_url` and a mapping, e.g.
   ```json
@@ -107,7 +114,7 @@ Skip link, landmarks, one `h1` per page, `lang`, labelled controls, `aria-curren
 ## 8. Testing
 `composer test` (Pest 5 on PHPUnit, in-memory SQLite) · `composer test:coverage` (PCOV, fails below 80 %).
 
-Latest result: **178 tests, all passing.**
+Latest result: **253 tests, all passing.**
 
 | File | Covers |
 |---|---|
@@ -120,6 +127,7 @@ Latest result: **178 tests, all passing.**
 | `SecurityTest` | CSRF 419, headers/CSP, no inline scripts, XSS escaping, mass assignment, hidden hashes |
 | `ManagePagesTest` | admin pages, own vs. all scope, filters, pagination, global/private type visibility |
 | `MeasurementTypeDisplayTest` | type creation (private/global), display validation, per-device overrides, value formatting |
+| `LocalizationTest`, `SeoTest` | language detection and switching, redirects, translated pages/messages, hreflang/canonical/noindex, sitemap, robots |
 | `AccessibilityTest` | structure, labels, live regions, captions, aria on errors |
 | `tests/Unit/*` | mapper, UrlGuard, policies, MeasurementService |
 

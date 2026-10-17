@@ -73,6 +73,20 @@ class Device extends Model
             ->when($user, fn ($q) => $q->orWhere('user_id', $user->id)));
     }
 
+    /** Stored errors are English keys (written by the cron job); shown in the viewer's language. */
+    public function lastErrorText(): ?string
+    {
+        $e = $this->last_error;
+        if ($e === null) {
+            return null;
+        }
+        if (preg_match('/^Data source responded with HTTP (\d+)\.$/', $e, $m)) {
+            return __('Data source responded with HTTP :status.', ['status' => $m[1]]);
+        }
+
+        return __($e);
+    }
+
     public static function hashToken(string $token): string
     {
         return hash('sha256', $token);

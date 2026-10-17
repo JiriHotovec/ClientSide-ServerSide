@@ -14,7 +14,7 @@ class IngestController extends Controller
     {
         $token = $request->bearerToken();
         $device = $token ? Device::where('ingest_token_hash', Device::hashToken($token))->first() : null;
-        abort_unless($device, 401, 'Invalid or missing device token.');
+        abort_unless($device, 401, __('Invalid or missing device token.'));
 
         $data = $request->validate([
             'measurements' => ['required', 'array', 'min:1', 'max:500'],

@@ -95,12 +95,12 @@ it('changes visibility and reflects it immediately on public pages and APIs (A10
     $this->actingAs($user)->patchJson("/api/devices/{$device->uuid}/visibility", ['is_public' => true])->assertOk()->assertJsonPath('data.is_public', true);
     auth()->logout();
     $this->getJson("/api/public/devices/{$device->uuid}")->assertOk();
-    $this->get('/devices')->assertSee($device->name);
+    $this->get('/en/devices')->assertSee($device->name);
 
     $this->actingAs($user)->patchJson("/api/devices/{$device->uuid}/visibility", ['is_public' => false])->assertOk();
     auth()->logout();
     $this->getJson("/api/public/devices/{$device->uuid}")->assertNotFound();
-    $this->get('/devices')->assertDontSee($device->name);
+    $this->get('/en/devices')->assertDontSee($device->name);
 });
 
 it('lets an admin change visibility of any device (A10)', function () {

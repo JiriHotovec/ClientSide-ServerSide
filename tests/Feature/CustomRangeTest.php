@@ -52,14 +52,14 @@ it('aggregates a custom range in the popup and offers the date inputs', function
     at($device, $type, 10, '2026-09-11 10:00:00');
     at($device, $type, 30, '2026-09-11 14:00:00');
 
-    $res = $this->get("/devices/{$device->uuid}/table/{$type->key}?period=custom&from=2026-09-11&to=2026-09-11&bucket=day")->assertOk();
+    $res = $this->get("/en/devices/{$device->uuid}/table/{$type->key}?period=custom&from=2026-09-11&to=2026-09-11&bucket=day")->assertOk();
 
     $res->assertSee('name="from"', false)->assertSee('value="2026-09-11"', false)->assertSee('10.0')->assertSee('20.0')->assertSee('30.0')->assertSee('Custom dates');
 });
 
 it('defaults a custom popup to the last seven days and rejects bad dates', function () {
     [$device, $type] = deviceWithData(['is_public' => true]);
-    $base = "/devices/{$device->uuid}/table/{$type->key}";
+    $base = "/en/devices/{$device->uuid}/table/{$type->key}";
 
     $this->get("$base?period=custom")->assertOk()->assertSee('name="from"', false);
     $this->get("$base?period=custom&from=2026-09-10&to=2026-09-01")->assertStatus(422);
@@ -70,16 +70,16 @@ it('defaults a custom popup to the last seven days and rejects bad dates', funct
 it('does not show date inputs for the preset periods in the popup', function () {
     [$device, $type] = deviceWithData(['is_public' => true]);
 
-    $this->get("/devices/{$device->uuid}/table/{$type->key}?period=7d")->assertDontSee('name="from"', false);
+    $this->get("/en/devices/{$device->uuid}/table/{$type->key}?period=7d")->assertDontSee('name="from"', false);
 });
 
 it('renders the custom range controls, the group-independent date form and the enlarge button', function () {
     [$device, $type] = deviceWithData(['is_public' => true]);
 
-    $html = $this->get("/devices/{$device->uuid}")->getContent();
+    $html = $this->get("/en/devices/{$device->uuid}")->getContent();
     expect($html)->toContain('data-period="custom"')->toContain('data-range-form')->toContain('name="from"');
 
-    $this->get("/devices/{$device->uuid}/table/{$type->key}")->assertSee('data-expand', false)->assertSee('Enlarge');
+    $this->get("/en/devices/{$device->uuid}/table/{$type->key}")->assertSee('data-expand', false)->assertSee('Enlarge');
 });
 
 it('derives a sensible default bucket from the range length', function () {
@@ -128,7 +128,7 @@ it('rejects an out-of-range timezone offset', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
     $this->getJson("/api/public/devices/{$device->uuid}/measurements?from=2026-09-01&to=2026-09-02&tz=9999")->assertUnprocessable()->assertJsonValidationErrors('tz');
-    $this->get("/devices/{$device->uuid}/table/temperature?period=custom&tz=9999")->assertStatus(422);
+    $this->get("/en/devices/{$device->uuid}/table/temperature?period=custom&tz=9999")->assertStatus(422);
 });
 
 it('shows datetime inputs in the popup and the panel, and day buckets start at local midnight', function () {
@@ -136,8 +136,8 @@ it('shows datetime inputs in the popup and the panel, and day buckets start at l
     at($device, $type, 10, '2026-09-10 22:30:00'); // 00:30 local on the 11th (tz -120)
     at($device, $type, 30, '2026-09-11 21:00:00'); // 23:00 local on the 11th
 
-    $res = $this->get("/devices/{$device->uuid}/table/{$type->key}?period=custom&from=2026-09-11T00:00&to=2026-09-11T23:59&bucket=day&tz=-120")->assertOk();
+    $res = $this->get("/en/devices/{$device->uuid}/table/{$type->key}?period=custom&from=2026-09-11T00:00&to=2026-09-11T23:59&bucket=day&tz=-120")->assertOk();
     $res->assertSee('type="datetime-local"', false)->assertSee('20.0')->assertSee('name="tz"', false);
 
-    $this->get("/devices/{$device->uuid}")->assertSee('type="datetime-local"', false)->assertSee('name="tz"', false);
+    $this->get("/en/devices/{$device->uuid}")->assertSee('type="datetime-local"', false)->assertSee('name="tz"', false);
 });

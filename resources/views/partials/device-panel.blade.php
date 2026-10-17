@@ -12,29 +12,29 @@
             @else
                 <h2 id="dev-title-{{ $device->uuid }}">{{ $device->name }}</h2>
             @endif
-            <p>{{ $device->location ?: 'Location not specified' }}@if($device->description) – {{ $device->description }}@endif</p>
+            <p>{{ $device->location ?: __('Location not specified') }}@if($device->description) – {{ $device->description }}@endif</p>
         </div>
         <p class="station-meta">
-            <span class="badge">{{ $device->is_public ? 'Public' : 'Private' }}</span>
-            @if($updated)<span>Updated {{ $updated->diffForHumans() }}</span>@else<span>No readings yet</span>@endif
+            <span class="badge">{{ $device->is_public ? __('Public') : __('Private') }}</span>
+            @if($updated)<span>{{ __('Updated :time', ['time' => $updated->diffForHumans()]) }}</span>@else<span>{{ __('No readings yet') }}</span>@endif
         </p>
     </header>
 
     @if($device->types->isEmpty())
-        <p role="status">This device has no datasets configured yet.</p>
+        <p role="status">{{ __('This device has no datasets configured yet.') }}</p>
     @else
-    <section class="tiles" aria-label="Current conditions">
+    <section class="tiles" aria-label="{{ __('Current conditions') }}">
         @foreach($device->types as $type)
             @php($sn = $snaps[$type->id])
             <div class="tile">
                 <h3>{{ $type->name }}</h3>
                 @if($sn['latest'] !== null)
                     <p class="tile-value">{{ \App\Support\DisplaySettings::format($sn['latest'], $sn['display'], false) }}@if($sn['display']['unit_position'] !== 'none')<span class="tile-unit">{{ $sn['display']['unit'] }}</span>@endif</p>
-                    <p class="tile-range">Low {{ \App\Support\DisplaySettings::format($sn['min'], $sn['display']) }}<span aria-hidden="true"> / </span><span class="sr-only">, </span>High {{ \App\Support\DisplaySettings::format($sn['max'], $sn['display']) }}<span class="sr-only"> in the last 24 hours</span></p>
+                    <p class="tile-range">{{ __('Low') }} {{ \App\Support\DisplaySettings::format($sn['min'], $sn['display']) }}<span aria-hidden="true"> / </span><span class="sr-only">, </span>{{ __('High') }} {{ \App\Support\DisplaySettings::format($sn['max'], $sn['display']) }}<span class="sr-only"> {{ __('in the last 24 hours') }}</span></p>
                     <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{ $sn['points'] }}" fill="none" stroke="{{ $sn['display']['color'] }}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>
                 @else
-                    <p class="tile-value tile-empty">No data</p>
-                    <p class="tile-range">Nothing in the last 24 hours</p>
+                    <p class="tile-value tile-empty">{{ __('No data') }}</p>
+                    <p class="tile-range">{{ __('Nothing in the last 24 hours') }}</p>
                 @endif
             </div>
         @endforeach
@@ -42,24 +42,24 @@
 
     <div class="toolbar">
         @if($groups->count() > 1)
-        <div class="group-row" role="group" aria-label="Measurement groups of {{ $device->name }}" data-group-menu>
+        <div class="group-row" role="group" aria-label="{{ __('Measurement groups of :name', ['name' => $device->name]) }}" data-group-menu>
             @foreach($groups as $cat => $types)
-                <button type="button" data-category="{{ $cat }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">{{ \App\Support\Categories::label($cat) }}<small>{{ $types->count() }}</small><span class="sr-only"> {{ \Illuminate\Support\Str::plural('dataset', $types->count()) }}</span></button>
+                <button type="button" data-category="{{ $cat }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">{{ \App\Support\Categories::label($cat) }}<small>{{ $types->count() }}</small><span class="sr-only"> {{ trans_choice('dataset|datasets', $types->count()) }}</span></button>
             @endforeach
         </div>
         @else
             <h2 class="toolbar-title">{{ \App\Support\Categories::label($groups->keys()->first()) }}</h2>
         @endif
         <div class="range-controls">
-            <fieldset role="group" aria-label="Time period" class="period">
-                <button type="button" data-period="24h" aria-pressed="true">24 hours</button>
-                <button type="button" data-period="7d" aria-pressed="false" class="outline">7 days</button>
-                <button type="button" data-period="custom" aria-pressed="false" class="outline" aria-expanded="false" aria-controls="range-{{ $device->uuid }}">Custom</button>
+            <fieldset role="group" aria-label="{{ __('Time period') }}" class="period">
+                <button type="button" data-period="24h" aria-pressed="true">{{ __('24 hours') }}</button>
+                <button type="button" data-period="7d" aria-pressed="false" class="outline">{{ __('7 days') }}</button>
+                <button type="button" data-period="custom" aria-pressed="false" class="outline" aria-expanded="false" aria-controls="range-{{ $device->uuid }}">{{ __('Custom') }}</button>
             </fieldset>
             <form class="range-form" id="range-{{ $device->uuid }}" data-range-form hidden>
-                <label>From <input type="datetime-local" name="from" required></label>
-                <label>To <input type="datetime-local" name="to" required></label>
-                <button type="submit">Show</button>
+                <label>{{ __('From') }} <input type="datetime-local" name="from" required></label>
+                <label>{{ __('To') }} <input type="datetime-local" name="to" required></label>
+                <button type="submit">{{ __('Show') }}</button>
                 <p class="range-error" data-range-error role="alert"></p>
             </form>
         </div>
@@ -76,21 +76,21 @@
             <header class="card-head">
                 <h3 id="card-{{ $device->uuid }}-{{ $type->key }}">{{ $type->name }}</h3>
                 <div class="card-actions">
-                <button type="button" class="icon-btn" data-zoom aria-label="Enlarge chart of {{ $type->name }}" hidden>
+                <button type="button" class="icon-btn" data-zoom aria-label="{{ __('Enlarge chart of :name', ['name' => $type->name]) }}" hidden>
                     <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5M8.5 6v5M6 8.5h5"/></svg>
                 </button>
-                <button type="button" class="outline small" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-include="[data-period-state]" hx-target="#dialog-body-{{ $device->uuid }}" hx-swap="innerHTML" hx-disabled-elt="this">Data table<span class="sr-only"> for {{ $type->name }}</span></button>
+                <button type="button" class="outline small" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-include="[data-period-state]" hx-target="#dialog-body-{{ $device->uuid }}" hx-swap="innerHTML" hx-disabled-elt="this">{{ __('Data table') }}<span class="sr-only"> {{ __('for :name', ['name' => $type->name]) }}</span></button>
                 </div>
             </header>
             <div data-status role="status" aria-live="polite" class="status"></div>
             <div data-source-warning role="alert" hidden></div>
             <dl class="stats" data-stats hidden>
-                <div><dt>Lowest</dt><dd data-stat="min"></dd></div>
-                <div><dt>Average</dt><dd data-stat="avg"></dd></div>
-                <div><dt>Highest</dt><dd data-stat="max"></dd></div>
+                <div><dt>{{ __('Lowest') }}</dt><dd data-stat="min"></dd></div>
+                <div><dt>{{ __('Average') }}</dt><dd data-stat="avg"></dd></div>
+                <div><dt>{{ __('Highest') }}</dt><dd data-stat="max"></dd></div>
             </dl>
             <figure data-chart-wrap hidden>
-                <canvas data-chart role="img" aria-label="Chart of {{ $type->name }}. Open the data table for the exact values."></canvas>
+                <canvas data-chart role="img" aria-label="{{ __('Chart of :name. Open the data table for the exact values.', ['name' => $type->name]) }}"></canvas>
             </figure>
         </article>
         @endforeach
@@ -100,10 +100,10 @@
     <dialog class="data-dialog zoom-dialog" data-zoom-dialog aria-labelledby="zoom-title-{{ $device->uuid }}">
         <div class="popup-head">
             <h2 id="zoom-title-{{ $device->uuid }}" data-zoom-title tabindex="-1"></h2>
-            <form method="dialog"><button class="popup-close" aria-label="Close enlarged chart">Close</button></form>
+            <form method="dialog"><button class="popup-close" aria-label="{{ __('Close enlarged chart') }}">{{ __('Close') }}</button></form>
         </div>
         <dl class="stats" data-zoom-stats></dl>
-        <div class="zoom-chart"><canvas data-zoom-canvas role="img" aria-label="Enlarged chart"></canvas></div>
+        <div class="zoom-chart"><canvas data-zoom-canvas role="img" aria-label="{{ __('Enlarged chart') }}"></canvas></div>
     </dialog>
 
     <dialog class="data-dialog" data-dialog aria-labelledby="dialog-title-{{ $device->uuid }}">

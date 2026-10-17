@@ -48,7 +48,7 @@ class MeasurementService
             'to' => $to->utc()->toIso8601String(),
             'source_status' => [
                 'ok' => $device->last_error === null,
-                'message' => $device->last_error,
+                'message' => $device->lastErrorText(),
                 'last_fetched_at' => $device->last_fetched_at?->utc()->toIso8601String(),
             ],
             'summary' => [

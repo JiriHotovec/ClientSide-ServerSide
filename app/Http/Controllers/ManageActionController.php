@@ -23,7 +23,7 @@ class ManageActionController extends Controller
         $this->authorize('create', Device::class);
         $device = $this->devices->create($request->user(), $request->validated());
 
-        return redirect()->route('manage.devices')->with('status', "Device \"{$device->name}\" was created.");
+        return redirect()->route('manage.devices')->with('status', __('Device ":name" was created.', ['name' => $device->name]));
     }
 
     public function updateDevice(DeviceRequest $request, Device $device)
@@ -31,7 +31,7 @@ class ManageActionController extends Controller
         $this->authorize('update', $device);
         $this->devices->update($device, $request->validated());
 
-        return redirect()->route('manage.devices')->with('status', "Device \"{$device->name}\" was updated.");
+        return redirect()->route('manage.devices')->with('status', __('Device ":name" was updated.', ['name' => $device->name]));
     }
 
     public function destroyDevice(Device $device)
@@ -39,7 +39,7 @@ class ManageActionController extends Controller
         $this->authorize('delete', $device);
         $device->delete();
 
-        return redirect()->route('manage.devices')->with('status', "Device \"{$device->name}\" was deleted.");
+        return redirect()->route('manage.devices')->with('status', __('Device ":name" was deleted.', ['name' => $device->name]));
     }
 
     public function visibility(Request $request, Device $device)
@@ -48,7 +48,7 @@ class ManageActionController extends Controller
         $data = $request->validate(['is_public' => ['required', 'boolean']]);
         $this->devices->setVisibility($device, $data['is_public']);
 
-        return back()->with('status', "\"{$device->name}\" is now ".($device->is_public ? 'public' : 'private').'.');
+        return back()->with('status', __('":name" is now :state.', ['name' => $device->name, 'state' => $device->is_public ? __('public') : __('private')]));
     }
 
     /** The plain token is flashed once; only its hash is stored. */
@@ -56,8 +56,7 @@ class ManageActionController extends Controller
     {
         $this->authorize('update', $device);
 
-        return back()->with('status', "New token for \"{$device->name}\" (shown only once, copy it now): ".$device->regenerateIngestToken()
-            .'. Send readings with "Authorization: Bearer <token>" to POST /api/ingest.');
+        return back()->with('status', __('New token for ":name" (shown only once, copy it now): :token. Send readings with "Authorization: Bearer <token>" to POST /api/ingest.', ['name' => $device->name, 'token' => $device->regenerateIngestToken()]));
     }
 
     public function storeType(MeasurementTypeRequest $request)
@@ -67,7 +66,7 @@ class ManageActionController extends Controller
         $type->is_public = $request->user()->isAdmin() && $request->boolean('is_public'); // only admins publish globally
         $type->save();
 
-        return redirect()->route('manage.types')->with('status', "Measurement type \"{$type->name}\" was created.");
+        return redirect()->route('manage.types')->with('status', __('Measurement type ":name" was created.', ['name' => $type->name]));
     }
 
     public function updateType(MeasurementTypeRequest $request, MeasurementType $measurementType)
@@ -79,17 +78,17 @@ class ManageActionController extends Controller
             $measurementType->save();
         }
 
-        return redirect()->route('manage.types')->with('status', "Measurement type \"{$measurementType->name}\" was updated.");
+        return redirect()->route('manage.types')->with('status', __('Measurement type ":name" was updated.', ['name' => $measurementType->name]));
     }
 
     public function destroyType(MeasurementType $measurementType)
     {
         $this->authorize('delete', $measurementType);
         if ($measurementType->isInUse()) {
-            return back()->with('status', "\"{$measurementType->name}\" is in use by a device and cannot be deleted.");
+            return back()->with('status', __('":name" is in use by a device and cannot be deleted.', ['name' => $measurementType->name]));
         }
         $measurementType->delete();
 
-        return redirect()->route('manage.types')->with('status', "Measurement type \"{$measurementType->name}\" was deleted.");
+        return redirect()->route('manage.types')->with('status', __('Measurement type ":name" was deleted.', ['name' => $measurementType->name]));
     }
 }
