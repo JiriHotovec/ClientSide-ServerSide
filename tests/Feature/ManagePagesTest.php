@@ -113,3 +113,12 @@ it('does not offer creating a device on the devices and data sources page (it li
     $this->get('/manage/devices?q=nothing')->assertSee('No devices match.')->assertDontSee(route('manage.devices.create'), false);
     $this->get('/manage')->assertSee(route('manage.devices.create'), false)->assertSee('Add a device');
 });
+
+it('shows the visibility of a device in the list without a quick toggle button (it is changed in the device form)', function () {
+    $user = User::factory()->create();
+    Device::factory()->for($user, 'owner')->public()->create(['name' => 'Alpha']);
+    Device::factory()->for($user, 'owner')->private()->create(['name' => 'Beta']);
+
+    $this->actingAs($user)->get('/manage/devices')->assertSee('Public')->assertSee('Private')
+        ->assertDontSee('Make private')->assertDontSee('Make public')->assertDontSee('/visibility', false);
+});

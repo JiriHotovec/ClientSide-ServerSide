@@ -28,10 +28,6 @@
             <td>{{ $device->types->pluck('name')->join(', ') ?: __('None') }}</td>
             <td>
                 <span class="badge {{ $device->is_public ? '' : 'badge-private' }}">{{ $device->is_public ? __('Public') : __('Private') }}</span>
-                <form method="post" action="{{ route('manage.devices.visibility', $device) }}" class="inline-form">@csrf @method('PATCH')
-                    <input type="hidden" name="is_public" value="{{ $device->is_public ? 0 : 1 }}">
-                    <button type="submit" class="outline secondary small">{{ $device->is_public ? __('Make private') : __('Make public') }}<span class="sr-only"> {{ $device->name }}</span></button>
-                </form>
             </td>
             <td>
                 @if($device->last_error)<span class="error-text">{{ __('Last update failed: :error', ['error' => $device->lastErrorText()]) }}</span>
