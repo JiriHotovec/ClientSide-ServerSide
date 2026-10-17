@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ManageController;
 use App\Http\Controllers\PageController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -24,9 +25,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/devices/{device}', [PageController::class, 'dashboardPanel'])->name('dashboard.panel');
     });
 
-    Route::prefix('manage')->group(function () {
-        Route::get('/devices', [PageController::class, 'manage'])->name('manage.devices');
-        Route::get('/devices/list', [PageController::class, 'manageList'])->name('manage.list');
-        Route::get('/devices/form/{device?}', [PageController::class, 'manageForm'])->name('manage.form');
+    Route::prefix('manage')->name('manage.')->group(function () {
+        Route::get('/', [ManageController::class, 'overview'])->name('overview');
+        Route::get('/devices', [ManageController::class, 'devices'])->name('devices');
+        Route::get('/devices/create', [ManageController::class, 'createDevice'])->name('devices.create');
+        Route::get('/devices/{device}/edit', [ManageController::class, 'editDevice'])->name('devices.edit');
+        Route::get('/types', [ManageController::class, 'types'])->name('types');
+        Route::get('/types/create', [ManageController::class, 'createType'])->name('types.create');
+        Route::get('/types/{measurementType}/edit', [ManageController::class, 'editType'])->name('types.edit');
     });
 });

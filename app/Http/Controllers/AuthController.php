@@ -59,6 +59,6 @@ class AuthController extends Controller
 
     private function home(User $user): string
     {
-        return $user->isAdmin() ? route('manage.devices') : route('dashboard');
+        return $user->isAdmin() ? route('manage.overview') : route('dashboard');
     }
 }

@@ -12,6 +12,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.meteo');
         Password::defaults(fn () => Password::min(10)->letters()->numbers());
 
         RateLimiter::for('login', fn (Request $r) => Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip()));

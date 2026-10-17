@@ -41,7 +41,7 @@ it('exposes accessible names on management actions', function () {
     $user = User::factory()->create();
     \App\Models\Device::factory()->for($user, 'owner')->create(['name' => 'Roof']);
 
-    $this->actingAs($user)->get('/manage/devices/list')->assertSee('<span class="sr-only"> Roof</span>', false);
+    $this->actingAs($user)->get('/manage/devices')->assertSee('<span class="sr-only"> Roof</span>', false);
 });
 
 it('reports validation errors with aria-invalid and role=alert', function () {

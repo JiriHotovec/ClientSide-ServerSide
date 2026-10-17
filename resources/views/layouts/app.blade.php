@@ -19,12 +19,10 @@
         <ul>
             <li><a href="{{ route('devices.index') }}" @if(request()->routeIs('devices.*')) aria-current="page" @endif>Public devices</a></li>
             @auth
-                @if(auth()->user()->isAdmin())
-                    <li><a href="{{ route('manage.devices') }}" @if(request()->routeIs('manage.*')) aria-current="page" @endif>Administration</a></li>
-                @else
+                @unless(auth()->user()->isAdmin())
                     <li><a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard*')) aria-current="page" @endif>My dashboard</a></li>
-                    <li><a href="{{ route('manage.devices') }}" @if(request()->routeIs('manage.*')) aria-current="page" @endif>My devices</a></li>
-                @endif
+                @endunless
+                <li><a href="{{ route('manage.overview') }}" @if(request()->routeIs('manage.*')) aria-current="page" @endif>{{ auth()->user()->isAdmin() ? 'Admin panel' : 'Manage' }}</a></li>
                 <li>
                     <form method="post" action="{{ route('logout') }}" class="inline">@csrf
                         <button type="submit" class="outline secondary">Log out ({{ auth()->user()->name }})</button>

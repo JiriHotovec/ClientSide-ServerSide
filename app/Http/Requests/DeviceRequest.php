@@ -25,6 +25,9 @@ class DeviceRequest extends FormRequest
             'is_public' => ['sometimes', 'boolean'],
             'types' => ['sometimes', 'array'],
             'types.*' => ['integer', Rule::exists('measurement_types', 'id')],
+            'type_settings' => ['sometimes', 'array'],
+            'type_settings.*.unit' => ['nullable', 'string', 'max:20'],
+        ] + MeasurementTypeRequest::displayRules('type_settings.*.', true) + [
             'source_url' => ['nullable', 'url:http,https', 'max:500'],
             'source_mapping' => ['nullable', 'array'],
             'source_mapping.values' => ['required_with:source_mapping', 'array'],
@@ -54,6 +57,14 @@ class DeviceRequest extends FormRequest
         return [function (Validator $v) {
             if ($this->input('source_mapping') === 'invalid') {
                 $v->errors()->add('source_mapping', 'The mapping must be valid JSON.');
+            }
+            // Types must be visible to the device owner (global ones or the owner's private ones).
+            $owner = $this->route('device')?->owner ?? $this->user();
+            $allowed = \App\Models\MeasurementType::visibleTo($owner)->whereIn('id', $this->input('types', []))->pluck('id')->all();
+            foreach ($this->input('types', []) as $i => $id) {
+                if (! in_array($id, $allowed)) {
+                    $v->errors()->add("types.$i", 'This measurement type is not available for the device owner.');
+                }
             }
             if ($url = $this->input('source_url')) {
                 try {

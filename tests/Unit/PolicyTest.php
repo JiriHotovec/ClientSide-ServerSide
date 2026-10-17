@@ -36,7 +36,8 @@ it('lets only creators/admins change non-system measurement types', function () 
     expect($p->update($creator, $custom))->toBeTrue()
         ->and($p->update($admin, $custom))->toBeTrue()
         ->and($p->delete($other, $custom))->toBeFalse()
-        ->and($p->update($admin, $system))->toBeFalse();
+        ->and($p->update($admin, $system))->toBeTrue()
+        ->and($p->update($creator, $system))->toBeFalse();
 });
 
 it('scopes visibility per viewer', function () {

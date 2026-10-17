@@ -13,7 +13,7 @@ class DeviceService
         $device->user_id = $owner->id;
         $device->is_public = (bool) ($data['is_public'] ?? false);
         $device->save();
-        $device->types()->sync($data['types'] ?? []);
+        $this->syncTypes($device, $data['types'] ?? [], $data['type_settings'] ?? []);
 
         return $device;
     }
@@ -26,7 +26,7 @@ class DeviceService
         }
         $device->save();
         if (array_key_exists('types', $data)) {
-            $device->types()->sync($data['types']);
+            $this->syncTypes($device, $data['types'], $data['type_settings'] ?? []);
         }
 
         return $device;
@@ -38,6 +38,17 @@ class DeviceService
         $device->save();
 
         return $device;
+    }
+
+    /** @param list<int> $ids  @param array<int,array> $settings per-device display overrides keyed by type id */
+    private function syncTypes(Device $device, array $ids, array $settings): void
+    {
+        $sync = [];
+        foreach ($ids as $id) {
+            $row = array_intersect_key($settings[$id] ?? [], array_flip(\App\Support\DisplaySettings::FIELDS));
+            $sync[$id] = array_map(fn ($v) => $v === '' ? null : $v, $row) + array_fill_keys(\App\Support\DisplaySettings::FIELDS, null);
+        }
+        $device->types()->sync($sync);
     }
 
     private function attributes(array $data): array

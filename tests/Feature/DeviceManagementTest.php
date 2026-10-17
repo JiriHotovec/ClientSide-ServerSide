@@ -4,7 +4,10 @@ use App\Models\Device;
 use App\Models\MeasurementType;
 use App\Models\User;
 
-beforeEach(fn () => $this->type = MeasurementType::create(['key' => 'temperature', 'name' => 'Temperature', 'unit' => '°C']));
+beforeEach(function () {
+    $this->type = MeasurementType::create(['key' => 'temperature', 'name' => 'Temperature', 'unit' => '°C']);
+    $this->type->forceFill(['is_system' => true, 'is_public' => true])->save();
+});
 
 it('lets a user create a device that is owned by them (A9)', function () {
     $user = User::factory()->create();
@@ -61,7 +64,7 @@ it('rejects requests with another user\'s device id on every protected endpoint 
     $this->patchJson("/api/devices/{$device->id}/visibility", ['is_public' => true])->assertForbidden();
     $this->postJson("/api/devices/{$device->id}/token")->assertForbidden();
     $this->getJson("/api/devices/{$device->id}/measurements")->assertForbidden();
-    $this->get("/manage/devices/form/{$device->id}")->assertForbidden();
+    $this->get("/manage/devices/{$device->id}/edit")->assertForbidden();
 
     $this->assertDatabaseHas('devices', ['id' => $device->id, 'name' => $device->name]);
 });
@@ -124,19 +127,10 @@ it('shows a user only own devices on the personal dashboard and switches devices
     $this->get("/dashboard/devices/{$theirs->id}", ['HX-Request' => 'true'])->assertForbidden();
 });
 
-it('renders htmx fragments for the management UI', function () {
-    $user = User::factory()->create();
-    Device::factory()->for($user, 'owner')->create(['name' => 'Mine']);
-    Device::factory()->create(['name' => 'Theirs']);
+it('lets admins open the edit page of any device', function () {
+    $device = Device::factory()->create(['name' => 'Theirs']);
 
-    $this->actingAs($user)->get('/manage/devices/list', ['HX-Request' => 'true'])->assertOk()->assertSee('Mine')->assertDontSee('Theirs')->assertDontSee('<html', false);
-    $this->get('/manage/devices/form')->assertOk()->assertSee('Add a device');
-});
-
-it('lets admins see all devices in the management list', function () {
-    Device::factory()->create(['name' => 'Theirs']);
-
-    $this->actingAs(User::factory()->admin()->create())->get('/manage/devices/list')->assertSee('Theirs');
+    $this->actingAs(User::factory()->admin()->create())->get("/manage/devices/{$device->id}/edit")->assertOk()->assertSee('Theirs');
 });
 
 it('regenerates an ingest token and stores only its hash', function () {
@@ -161,7 +155,7 @@ it('manages measurement types: create, pick, protect in-use and foreign ones', f
     $this->actingAs($user)->postJson('/api/devices', ['name' => 'D', 'types' => [$id]])->assertCreated();
     $this->deleteJson("/api/measurement-types/{$id}")->assertStatus(409);
 
-    $this->deleteJson("/api/measurement-types/{$this->type->id}")->assertForbidden(); // system/foreign type
+    $this->deleteJson("/api/measurement-types/{$this->type->id}")->assertForbidden(); // system type
 });
 
 it('deletes an unused own measurement type', function () {

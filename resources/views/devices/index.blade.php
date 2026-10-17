@@ -5,28 +5,21 @@
     <h1>Public devices</h1>
     <p class="lead">Stations shared by their owners. Pick one to see its live readings and history.</p>
 </header>
+<form method="get" class="filters" role="search" aria-label="Search devices"
+      hx-get="{{ route('devices.index') }}" hx-trigger="input changed delay:300ms from:find input" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+    <label>Search <input type="search" name="q" value="{{ $search }}" placeholder="Name or location"></label>
+    <noscript><button type="submit">Search</button></noscript>
+</form>
+<div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($devices->isEmpty())
-    <p role="status" class="empty">No public devices yet. Be the first: <a href="{{ route('register') }}">create an account</a> and share a device.</p>
+    <p role="status" class="empty">{{ $search !== '' ? 'No public device matches your search.' : 'No public devices yet.' }} @guest<a href="{{ route('register') }}">Create an account</a> and share one.@endguest</p>
 @else
 <ul class="device-grid" role="list">
     @foreach($devices as $device)
-        @php($snap = $snaps[$device->id])
-        <li>
-            <a class="device-card" href="{{ route('devices.show', $device) }}">
-                <span class="dc-title">{{ $device->name }}</span>
-                <span class="dc-loc">{{ $device->location ?: 'Location not specified' }}</span>
-                @if($snap && $snap['latest'] !== null)
-                    <span class="dc-value">{{ rtrim(rtrim(number_format($snap['latest'], 1, '.', ''), '0'), '.') }}<span class="dc-unit">{{ $snap['type']->unit }}</span></span>
-                    <span class="dc-type">{{ $snap['type']->name }}, {{ $snap['at']->diffForHumans() }}</span>
-                    <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="{{ $snap['points'] }}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>
-                @else
-                    <span class="dc-type">No recent readings</span>
-                @endif
-                <span class="dc-types">{{ $device->types->pluck('name')->join(', ') ?: 'No datasets configured' }}</span>
-                <span class="sr-only">Open dashboard of {{ $device->name }}</span>
-            </a>
-        </li>
+        @include('partials.device-card', ['device' => $device, 'snap' => $snaps[$device->id], 'href' => route('devices.show', $device), 'owner' => false])
     @endforeach
 </ul>
+{{ $devices->links() }}
 @endif
+</div>
 @endsection

@@ -37,7 +37,7 @@ class Device extends Model
 
     public function types(): BelongsToMany
     {
-        return $this->belongsToMany(MeasurementType::class, 'device_measurement_type')->orderBy('name');
+        return $this->belongsToMany(MeasurementType::class, 'device_measurement_type')->withPivot(\App\Support\DisplaySettings::FIELDS)->orderBy('name');
     }
 
     public function measurements(): HasMany

@@ -32,7 +32,7 @@ it('redirects a standard user to the personal dashboard after login', function (
 it('redirects an administrator to the administration interface after login', function () {
     $admin = User::factory()->admin()->create();
 
-    $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect(route('manage.devices'));
+    $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect(route('manage.overview'));
 });
 
 it('gives a generic error for wrong credentials', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\DisplaySettings;
 use App\Models\Device;
 use App\Models\MeasurementType;
 
@@ -25,10 +26,11 @@ class MeasurementService
             ->orderBy('measured_at')
             ->get(['measured_at', 'value', 'source']);
 
+        $display = DisplaySettings::for($type);
         $data = $rows->map(fn ($m) => [
             'measured_at' => $m->measured_at->utc()->toIso8601String(),
             'value' => $m->value,
-            'unit' => $type->unit,
+            'unit' => $display['unit'],
             'source' => $m->source,
         ])->values();
 
@@ -36,7 +38,8 @@ class MeasurementService
 
         return [
             'device' => ['id' => $device->id, 'name' => $device->name, 'location' => $device->location],
-            'type' => ['key' => $type->key, 'name' => $type->name, 'unit' => $type->unit],
+            'type' => ['key' => $type->key, 'name' => $type->name, 'unit' => $display['unit']],
+            'display' => $display,
             'period' => $period,
             'from' => $from->utc()->toIso8601String(),
             'to' => $to->utc()->toIso8601String(),
@@ -67,7 +70,7 @@ class MeasurementService
         $rows = $device->measurements()->where('measurement_type_id', $type->id)
             ->where('measured_at', '>=', now()->subDay())->whereNotNull('value')->orderBy('measured_at')->get(['value', 'measured_at']);
         if ($rows->isEmpty()) {
-            return ['type' => $type, 'latest' => null, 'at' => null, 'points' => null];
+            return ['type' => $type, 'display' => DisplaySettings::for($type), 'latest' => null, 'at' => null, 'points' => null];
         }
         $min = $rows->min('value');
         $max = $rows->max('value');
@@ -76,6 +79,6 @@ class MeasurementService
         $dt = max($rows->last()->measured_at->timestamp - $t0, 1);
         $points = $rows->map(fn ($r) => round(($r->measured_at->timestamp - $t0) / $dt * 100, 1).','.round(28 - ($r->value - $min) / $span * 26, 1))->implode(' ');
 
-        return ['type' => $type, 'latest' => $rows->last()->value, 'at' => $rows->last()->measured_at, 'points' => $points];
+        return ['type' => $type, 'display' => DisplaySettings::for($type), 'formatted' => DisplaySettings::format($rows->last()->value, DisplaySettings::for($type)), 'latest' => $rows->last()->value, 'at' => $rows->last()->measured_at, 'points' => $points];
     }
 }

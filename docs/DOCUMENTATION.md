@@ -80,6 +80,13 @@ Measurement response: `{device, type{key,name,unit}, period, from, to, source_st
 ### Cron – `GET|POST /api/cron/fetch`
 For hosts without shell cron. Header `Authorization: Bearer <CRON_SECRET>` or `X-Cron-Token: <CRON_SECRET>` (compared with `hash_equals`; secrets in the query string are **not** accepted). Optional `?device=<id>`, `?force=1`. Returns `{devices, ok, failed, results[]}`. Equivalent CLI: `php artisan meteoview:fetch [--device=ID] [--force]`; the Laravel scheduler (`routes/console.php`) runs it every minute (needs the usual `* * * * * php artisan schedule:run`), each device honours its own `fetch_interval_min`.
 
+## 4b. Administration pages and display settings
+Pages (all behind login; users see their own devices, administrators can switch to "All devices"): `/manage` (card overview, paginated, filterable), `/manage/devices` (list + data source status), `/manage/devices/create` and `/{id}/edit`, `/manage/types` (list), `/manage/types/create` and `/{id}/edit`. Search, filters and pagination are plain GET requests enhanced with htmx (`hx-select="#results"`, URL is pushed); they also work without JavaScript. Saving goes through the REST API.
+
+**Measurement types are global or private.** Global (`is_public`) types are usable by everybody and only administrators can create/make them global; types created by users are private to the creator (and visible to admins). A device can only use types visible to its owner.
+
+**Display settings** live on the type (defaults) and can be overridden per device (`device_measurement_type` pivot, `null` = inherit): `unit`, `unit_position` (before/after/none), `unit_space`, `decimals`, `color`, `chart_type` (line/bar), `y_min`, `y_max`. The measurement API returns the resolved `display` object, which the chart, table and cards use; `type_settings` on `POST/PUT /api/devices` carries the overrides, validated like the type defaults.
+
 ## 5. External API integration status
 - **Integration-ready, generic JSON pull**: a device can define `source_url` and a mapping, e.g.
   ```json
@@ -99,7 +106,7 @@ Skip link, landmarks, one `h1` per page, `lang`, labelled controls, `aria-curren
 ## 8. Testing
 `composer test` (Pest 5 on PHPUnit, in-memory SQLite) · `composer test:coverage` (PCOV, fails below 80 %).
 
-Latest result: **106 tests, 312 assertions, all passing; line coverage 93.7 %.**
+Latest result: **144 tests, 425 assertions, all passing; line coverage 96.6 %.**
 
 | File | Covers |
 |---|---|
@@ -110,6 +117,8 @@ Latest result: **106 tests, 312 assertions, all passing; line coverage 93.7 %.**
 | `IngestTest` | token auth, validation, foreign type, null, upsert, throttle |
 | `PullAndCronTest` | pull mapping, errors, interval, failure isolation, SSRF matrix, cron secret/throttle |
 | `SecurityTest` | CSRF 419, headers/CSP, no inline scripts, XSS escaping, mass assignment, hidden hashes |
+| `ManagePagesTest` | admin pages, own vs. all scope, filters, pagination, global/private type visibility |
+| `MeasurementTypeDisplayTest` | type creation (private/global), display validation, per-device overrides, value formatting |
 | `AccessibilityTest` | structure, labels, live regions, captions, aria on errors |
 | `tests/Unit/*` | mapper, UrlGuard, policies, MeasurementService |
 

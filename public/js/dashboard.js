@@ -5,7 +5,13 @@
   const fmtTime = (iso) => new Date(iso).toLocaleString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
   });
-  const fmtValue = (v) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(v);
+  // Formats a value with the dataset's display settings (decimals, unit position/spacing).
+  const fmtValue = (v, d, withUnit = true) => {
+    const n = new Intl.NumberFormat(undefined, { minimumFractionDigits: d.decimals, maximumFractionDigits: d.decimals }).format(v);
+    if (!withUnit || !d.unit || d.unit_position === 'none') return n;
+    const sp = d.unit_space ? '\u00a0' : '';
+    return d.unit_position === 'before' ? d.unit + sp + n : n + sp + d.unit;
+  };
   const el = (tag, text, cls) => {
     const e = document.createElement(tag);
     if (text !== undefined) e.textContent = text;
@@ -67,7 +73,7 @@
 
       const cur = q('[data-current]');
       if (d.summary.latest) {
-        q('[data-current-value]').textContent = `${fmtValue(d.summary.latest.value)} ${d.summary.latest.unit}`;
+        q('[data-current-value]').textContent = fmtValue(d.summary.latest.value, d.display);
         q('[data-current-time]').textContent = `(${fmtTime(d.summary.latest.measured_at)}, source: ${d.summary.latest.source})`;
         cur.hidden = false;
       }
@@ -81,25 +87,25 @@
       const canvas = q('[data-chart]');
       state.chart?.destroy();
       const css = getComputedStyle(document.documentElement);
-      const line = css.getPropertyValue('--chart-line').trim() || '#0077b6';
+      const line = d.display.color || css.getPropertyValue('--chart-line').trim() || '#0077b6';
       if (window.Chart) { Chart.defaults.color = css.getPropertyValue('--muted').trim(); Chart.defaults.borderColor = css.getPropertyValue('--line').trim(); }
       if (!window.Chart) return; // table remains available as the text alternative
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       state.chart = new Chart(canvas, {
-        type: 'line',
+        type: d.display.chart_type,
         data: {
           labels: d.data.map((r) => r.measured_at),
           datasets: [{
             label, data: d.data.map((r) => r.value), spanGaps: false, // null => gap in the line, never 0
-            borderColor: line, backgroundColor: line, borderWidth: 2.5, pointRadius: d.data.length > 100 ? 0 : 3, tension: 0.2,
+            borderColor: line, backgroundColor: line, borderWidth: d.display.chart_type === 'bar' ? 0 : 2.5, pointRadius: d.data.length > 100 ? 0 : 3, tension: 0.2,
           }],
         },
         options: {
           animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? 'Missing value' : `${fmtValue(i.raw)} ${d.type.unit}`) } } },
+          plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? 'Missing value' : fmtValue(i.raw, d.display)) } } },
           scales: {
             x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
-            y: { title: { display: true, text: d.type.unit } },
+            y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
           },
         },
       });
@@ -112,7 +118,7 @@
       tbody.replaceChildren(...[...d.data].reverse().map((r) => {
         const tr = el('tr');
         tr.append(el('td', fmtTime(r.measured_at)));
-        tr.append(r.value === null ? el('td', 'Missing value', 'missing') : el('td', fmtValue(r.value)));
+        tr.append(r.value === null ? el('td', 'Missing value', 'missing') : el('td', fmtValue(r.value, d.display, false)));
         tr.append(el('td', r.unit), el('td', r.source));
         return tr;
       }));

@@ -15,7 +15,7 @@
             @php($snap = $featured['snap'])
             <a class="live" href="{{ route('devices.show', $featured['device']) }}" aria-label="Open dashboard of {{ $featured['device']->name }}">
                 <span class="live-name">{{ $featured['device']->name }}@if($featured['device']->location), {{ $featured['device']->location }}@endif</span>
-                <span class="live-value">{{ rtrim(rtrim(number_format($snap['latest'], 1, '.', ''), '0'), '.') }}<span class="live-unit">{{ $snap['type']->unit }}</span></span>
+                <span class="live-value">{{ \App\Support\DisplaySettings::format($snap['latest'], $snap['display'], false) }}@if($snap['display']['unit_position'] !== 'none')<span class="live-unit">{{ $snap['display']['unit'] }}</span>@endif</span>
                 <span class="live-type">{{ $snap['type']->name }}, updated {{ $snap['at']->diffForHumans() }}</span>
                 <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" role="img" aria-label="{{ $snap['type']->name }} over the last 24 hours">
                     <polyline points="{{ $snap['points'] }}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>

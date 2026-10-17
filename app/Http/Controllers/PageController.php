@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
-use App\Models\MeasurementType;
 use App\Services\MeasurementService;
 use Illuminate\Http\Request;
 
@@ -20,9 +19,12 @@ class PageController extends Controller
 
     public function publicDevices(MeasurementService $service)
     {
-        $devices = Device::public()->with('types')->orderBy('name')->get();
+        $search = trim((string) request('q', ''));
+        $devices = Device::public()->with('types')
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")->orWhere('location', 'like', "%{$search}%")))
+            ->orderBy('name')->paginate(9)->withQueryString();
 
-        return view('devices.index', ['devices' => $devices, 'snaps' => $devices->mapWithKeys(fn ($d) => [$d->id => $service->snapshot($d)])]);
+        return view('devices.index', ['devices' => $devices, 'search' => $search, 'snaps' => $devices->getCollection()->mapWithKeys(fn ($d) => [$d->id => $service->snapshot($d)])]);
     }
 
     public function publicDevice(Device $device)
@@ -48,34 +50,6 @@ class PageController extends Controller
         return view('partials.device-panel', [
             'device' => $device->load('types'),
             'endpoint' => url("/api/devices/{$device->id}/measurements"),
-        ]);
-    }
-
-    public function manage(Request $request)
-    {
-        return view('manage.index', ['types' => MeasurementType::orderBy('name')->get()]);
-    }
-
-    /** htmx fragment: list of manageable devices. */
-    public function manageList(Request $request)
-    {
-        $user = $request->user();
-        $devices = Device::with(['types', 'owner'])
-            ->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))->orderBy('name')->get();
-
-        return view('manage.list', ['devices' => $devices]);
-    }
-
-    /** htmx fragment: create/edit form. */
-    public function manageForm(Request $request, ?Device $device = null)
-    {
-        if ($device) {
-            $this->authorize('update', $device);
-        }
-
-        return view('manage.form', [
-            'device' => $device?->load('types'),
-            'types' => MeasurementType::orderBy('name')->get(),
         ]);
     }
 }
