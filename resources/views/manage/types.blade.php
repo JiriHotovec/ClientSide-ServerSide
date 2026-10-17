@@ -26,13 +26,14 @@
 <div class="table-wrap">
 <table>
     <caption class="sr-only">Measurement types</caption>
-    <thead><tr><th scope="col">Type</th><th scope="col">Example</th><th scope="col">Chart</th><th scope="col">Availability</th><th scope="col">Actions</th></tr></thead>
+    <thead><tr><th scope="col">Type</th><th scope="col">Example</th><th scope="col">Category</th><th scope="col">Chart</th><th scope="col">Availability</th><th scope="col">Actions</th></tr></thead>
     <tbody>
     @foreach($types as $t)
         @php($d = \App\Support\DisplaySettings::for($t))
         <tr>
             <th scope="row">{{ $t->name }}<br><small><code>{{ $t->key }}</code></small></th>
             <td>{{ \App\Support\DisplaySettings::format(21.456, $d) }}</td>
+            <td>{{ \App\Support\Categories::label($t->category) }}</td>
             <td><span class="swatch" data-color="{{ $d['color'] }}" aria-hidden="true"></span>{{ $d['chart_type'] === 'bar' ? 'Bars' : 'Line' }}</td>
             <td>
                 <span class="badge {{ $t->is_public ? '' : 'badge-private' }}">{{ $t->is_public ? 'Global' : 'Private' }}</span>

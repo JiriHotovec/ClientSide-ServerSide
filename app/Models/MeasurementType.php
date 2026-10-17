@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'name', 'unit', 'description', 'unit_position', 'unit_space', 'decimals', 'color', 'chart_type', 'y_min', 'y_max'])]
+#[Fillable(['key', 'name', 'unit', 'description', 'unit_position', 'unit_space', 'decimals', 'color', 'chart_type', 'y_min', 'y_max', 'category'])]
 class MeasurementType extends Model
 {
     /** @use HasFactory<MeasurementTypeFactory> */

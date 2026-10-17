@@ -38,6 +38,7 @@ class MeasurementTypeRequest extends FormRequest
             'name' => [$req, 'string', 'max:80'],
             'unit' => [$req, 'string', 'max:20'],
             'description' => ['nullable', 'string', 'max:255'],
+            'category' => ['sometimes', Rule::in(\App\Support\Categories::keys())],
             'is_public' => ['sometimes', 'boolean'],
         ] + self::displayRules('', true);
     }

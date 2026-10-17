@@ -20,7 +20,7 @@ class DeviceResource extends JsonResource
             'location' => $this->location,
             'is_public' => $this->is_public,
             'types' => $this->whenLoaded('types', fn () => $this->types->map(fn ($t) => [
-                'id' => $t->id, 'key' => $t->key, 'name' => $t->name, 'unit' => $t->unit,
+                'id' => $t->id, 'key' => $t->key, 'name' => $t->name, 'unit' => $t->unit, 'category' => $t->category,
             ])),
             // Owner/admin-only configuration is never exposed on public responses.
             $this->mergeWhen($manage, [

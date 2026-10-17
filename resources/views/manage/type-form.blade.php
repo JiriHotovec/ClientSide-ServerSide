@@ -14,6 +14,13 @@
             <small id="key-help">{{ $type ? 'The key cannot be changed.' : 'Lowercase letters, digits and underscore, for example uv_index.' }}</small></label>
         <label>Name <input name="name" required maxlength="80" value="{{ old('name', $type?->name) }}"></label>
     </div>
+    <label>Category
+        <select name="category" aria-describedby="cat-help">
+            @foreach(\App\Support\Categories::ALL as $k => $l)
+                <option value="{{ $k }}" @selected(old('category', $type?->category ?? 'weather') === $k)>{{ $l }}</option>
+            @endforeach
+        </select>
+        <small id="cat-help">Types in the same category share a tab on the device dashboard.</small></label>
     <label>Description <input name="description" maxlength="255" value="{{ old('description', $type?->description) }}"></label>
 
     <fieldset>

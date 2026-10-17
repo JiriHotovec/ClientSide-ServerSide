@@ -19,35 +19,73 @@
     return e;
   };
 
-  function init(root) {
-    if (root.dataset.ready) return;
-    root.dataset.ready = '1';
-    const q = (s) => root.querySelector(s);
-    const typeSelect = q('[data-control="type"]');
-    if (!typeSelect) return; // device without datasets
-    const state = { period: '24h', chart: null, controller: null };
+  // Chart.js configuration shared by the card chart and the enlarged (zoom) chart.
+  function buildConfig(d, label, line) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+      type: d.display.chart_type,
+      data: {
+        labels: d.data.map((r) => r.measured_at),
+        datasets: [{
+          label, data: d.data.map((r) => r.value), spanGaps: false, // null => gap in the line, never 0
+          borderColor: line, backgroundColor: line, borderWidth: d.display.chart_type === 'bar' ? 0 : 2.5, pointRadius: d.data.length > 100 ? 0 : 3, tension: 0.2,
+        }],
+      },
+      options: {
+        animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? 'Missing value' : fmtValue(i.raw, d.display)) } } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
+          y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
+        },
+      },
+    };
+  }
 
+  function chartColors(d) {
+    const css = getComputedStyle(document.documentElement);
+    Chart.defaults.color = css.getPropertyValue('--muted').trim();
+    Chart.defaults.borderColor = css.getPropertyValue('--line').trim();
+    return d.display.color || css.getPropertyValue('--chart-line').trim() || '#0077b6';
+  }
+
+  // One card = one dataset (chart + table). The period is shared by all cards of the panel.
+  function makeCard(root, card, state) {
+    const q = (s) => card.querySelector(s);
     const status = q('[data-status]');
     const warning = q('[data-source-warning]');
-    const hideAll = () => ['[data-current]', '[data-chart-wrap]', '[data-table-wrap]'].forEach((s) => { q(s).hidden = true; });
+    const hideAll = () => ['[data-stats]', '[data-chart-wrap]'].forEach((s) => { q(s).hidden = true; });
+    const type = card.dataset.type;
+    let chart = null;
+    let controller = null;
+    let loadedKey = null;
+    let last = null;
+    const zoomBtn = q('[data-zoom]');
 
     async function load() {
-      state.controller?.abort();
-      state.controller = new AbortController();
+      controller?.abort();
+      controller = new AbortController();
+      loadedKey = null;
+      last = null;
+      zoomBtn.hidden = true;
       status.textContent = 'Loading measurements…';
       status.setAttribute('aria-busy', 'true');
       warning.hidden = true;
       hideAll();
 
-      const url = `${root.dataset.endpoint}?period=${encodeURIComponent(state.period)}&type=${encodeURIComponent(typeSelect.value)}`;
+      const range = state.period === 'custom' ? `&from=${encodeURIComponent(state.from)}&to=${encodeURIComponent(state.to)}&tz=${state.tz}` : '';
+      const url = `${root.dataset.endpoint}?period=${encodeURIComponent(state.period)}${range}&type=${encodeURIComponent(type)}`;
       try {
-        const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal: state.controller.signal });
+        const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal: controller.signal });
         if (!res.ok) {
+          const body = res.status === 422 ? await res.json().catch(() => null) : null;
+          if (body?.errors) throw new Error(Object.values(body.errors).flat()[0]);
           const msg = { 401: 'Please log in again.', 403: 'You are not allowed to view this device.', 404: 'This dataset or device is not available.' }[res.status]
             || 'The server could not deliver the data right now. Please try again later.';
           throw new Error(msg);
         }
         render(await res.json());
+        loadedKey = state.key();
       } catch (err) {
         if (err.name === 'AbortError') return;
         status.textContent = err instanceof TypeError ? 'Could not reach the server. Check your connection and try again.' : err.message;
@@ -67,76 +105,168 @@
         status.textContent = `No measurements of ${d.type.name} in the selected period. Missing data is not shown as zero.`;
         return;
       }
-      const present = d.summary.count - d.summary.missing;
-      status.textContent = `${d.summary.count} readings, ${d.summary.missing} missing, from ${fmtTime(d.from)} to ${fmtTime(d.to)}.`;
-      if (present === 0) status.textContent += ' No valid values in this period.';
-
-      const cur = q('[data-current]');
-      if (d.summary.latest) {
-        q('[data-current-value]').textContent = fmtValue(d.summary.latest.value, d.display);
-        q('[data-current-time]').textContent = `(${fmtTime(d.summary.latest.measured_at)}, source: ${d.summary.latest.source})`;
-        cur.hidden = false;
-      }
-
+      // Success needs no message: the chart speaks for itself. Only explain the case without any valid value.
+      status.textContent = d.summary.count - d.summary.missing === 0 ? 'No valid values in this period.' : '';
+      renderStats(d);
+      last = d;
+      zoomBtn.hidden = !window.Chart;
       renderChart(d, label);
-      renderTable(d, label);
     }
 
     function renderChart(d, label) {
       q('[data-chart-wrap]').hidden = false;
       const canvas = q('[data-chart]');
-      state.chart?.destroy();
-      const css = getComputedStyle(document.documentElement);
-      const line = d.display.color || css.getPropertyValue('--chart-line').trim() || '#0077b6';
-      if (window.Chart) { Chart.defaults.color = css.getPropertyValue('--muted').trim(); Chart.defaults.borderColor = css.getPropertyValue('--line').trim(); }
-      if (!window.Chart) return; // table remains available as the text alternative
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      state.chart = new Chart(canvas, {
-        type: d.display.chart_type,
-        data: {
-          labels: d.data.map((r) => r.measured_at),
-          datasets: [{
-            label, data: d.data.map((r) => r.value), spanGaps: false, // null => gap in the line, never 0
-            borderColor: line, backgroundColor: line, borderWidth: d.display.chart_type === 'bar' ? 0 : 2.5, pointRadius: d.data.length > 100 ? 0 : 3, tension: 0.2,
-          }],
-        },
-        options: {
-          animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? 'Missing value' : fmtValue(i.raw, d.display)) } } },
-          scales: {
-            x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
-            y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
-          },
-        },
-      });
+      chart?.destroy();
+      if (!window.Chart) return; // the data table popup remains available as the text alternative
+      chart = new Chart(canvas, buildConfig(d, label, chartColors(d)));
       canvas.parentElement.classList.add('chart-box');
     }
 
-    function renderTable(d, label) {
-      q('[data-caption]').textContent = `${label} – last ${d.period === '24h' ? '24 hours' : '7 days'}, newest first`;
-      const tbody = q('[data-rows]');
-      tbody.replaceChildren(...[...d.data].reverse().map((r) => {
-        const tr = el('tr');
-        tr.append(el('td', fmtTime(r.measured_at)));
-        tr.append(r.value === null ? el('td', 'Missing value', 'missing') : el('td', fmtValue(r.value, d.display, false)));
-        tr.append(el('td', r.unit), el('td', r.source));
-        return tr;
-      }));
-      q('[data-table-wrap]').hidden = false;
+    // Lowest / average / highest of the valid values; missing values are skipped, never counted as zero.
+    function renderStats(d) {
+      const vals = d.data.map((r) => r.value).filter((v) => v !== null);
+      if (!vals.length) return;
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      q('[data-stat="min"]').textContent = fmtValue(Math.min(...vals), d.display);
+      q('[data-stat="avg"]').textContent = fmtValue(avg, d.display);
+      q('[data-stat="max"]').textContent = fmtValue(Math.max(...vals), d.display);
+      q('[data-stats]').hidden = false;
     }
 
-    typeSelect.addEventListener('change', load);
-    root.querySelectorAll('[data-period]').forEach((btn) => btn.addEventListener('click', () => {
-      state.period = btn.dataset.period;
-      root.querySelectorAll('[data-period]').forEach((b) => {
-        const on = b === btn;
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        b.classList.toggle('outline', !on);
-      });
-      load();
-    }));
-    load();
+    // Loads only when the card is visible and its data is missing or for another period (lazy for hidden tabs).
+    return { ensure() { if (loadedKey !== state.key()) load(); }, data: () => last };
   }
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '1';
+    const groups = [...root.querySelectorAll('[data-group]')];
+    if (!groups.length) return; // device without datasets
+    const state = { period: '24h', from: '', to: '', tz: new Date().getTimezoneOffset(), key() { return this.period === 'custom' ? `custom:${this.from}:${this.to}` : this.period; } };
+    const cards = new Map([...root.querySelectorAll('[data-card]')].map((c) => [c, makeCard(root, c, state)]));
+    let active = groups[0];
+
+    const ensureActive = () => active.querySelectorAll('[data-card]').forEach((c) => cards.get(c).ensure());
+    const syncHidden = () => {
+      const set = (n, v) => { const i = root.querySelector(`[data-period-state][name="${n}"]`); if (i) i.value = v; };
+      set('tz', state.tz); set('period', state.period); set('from', state.period === 'custom' ? state.from : ''); set('to', state.period === 'custom' ? state.to : '');
+    };
+
+    // Group row (Weather, Air quality, ...): only the active group loads its charts.
+    const row = root.querySelector('[data-group-menu]');
+    row?.querySelectorAll('button[data-category]').forEach((btn) => btn.addEventListener('click', () => {
+      row.querySelectorAll('button[data-category]').forEach((b) => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+      groups.forEach((g) => { g.hidden = g.dataset.group !== btn.dataset.category; });
+      active = groups.find((g) => g.dataset.group === btn.dataset.category);
+      ensureActive();
+    }));
+
+    // Enlarge a chart (magnifier): the same data is drawn again in a large dialog.
+    const zoom = root.querySelector('[data-zoom-dialog]');
+    let zoomChart = null;
+    root.querySelectorAll('[data-zoom]').forEach((btn) => btn.addEventListener('click', () => {
+      const card = btn.closest('[data-card]');
+      const d = cards.get(card).data();
+      if (!d || !window.Chart) return;
+      const label = `${d.type.name} (${d.type.unit})`;
+      zoom.querySelector('[data-zoom-title]').textContent = d.type.name;
+      zoom.querySelector('[data-zoom-canvas]').setAttribute('aria-label', `Enlarged chart of ${d.type.name}. Open the data table for exact values.`);
+      const stats = zoom.querySelector('[data-zoom-stats]');
+      stats.replaceChildren(...[['Lowest', 'min'], ['Average', 'avg'], ['Highest', 'max']].map(([t, k]) => {
+        const div = el('div'); div.append(el('dt', t), el('dd', card.querySelector(`[data-stat="${k}"]`).textContent)); return div;
+      }));
+      zoom.showModal();
+      zoomChart?.destroy();
+      zoomChart = new Chart(zoom.querySelector('[data-zoom-canvas]'), buildConfig(d, label, chartColors(d)));
+      zoom.querySelector('[data-zoom-title]').focus();
+    }));
+    zoom?.addEventListener('close', () => { zoomChart?.destroy(); zoomChart = null; });
+
+    // Period: presets and a custom date range.
+    const form = root.querySelector('[data-range-form]');
+    // Defaults: last 7 days in the viewer's local time (datetime-local expects "YYYY-MM-DDTHH:MM").
+    const localInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    if (form) {
+      form.elements.to.value = localInput(new Date());
+      form.elements.from.value = localInput(new Date(Date.now() - 7 * 86400000));
+    }
+    syncHidden();
+    const customBtn = root.querySelector('[data-period="custom"]');
+    const mark = (btn) => root.querySelectorAll('[data-period]').forEach((b) => {
+      const on = b === btn;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.classList.toggle('outline', !on);
+    });
+    root.querySelectorAll('[data-period]').forEach((btn) => btn.addEventListener('click', () => {
+      if (btn.dataset.period === 'custom') {
+        const open = form.hidden;
+        form.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) form.querySelector('input').focus();
+        return;
+      }
+      form.hidden = true;
+      customBtn.setAttribute('aria-expanded', 'false');
+      state.period = btn.dataset.period;
+      mark(btn); syncHidden(); ensureActive();
+    }));
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const err = form.querySelector('[data-range-error]');
+      const from = form.elements.from.value;
+      const to = form.elements.to.value;
+      err.textContent = '';
+      if (!from || !to) { err.textContent = 'Choose both dates and times.'; return; }
+      if (from >= to) { err.textContent = 'The start must be before the end.'; return; }
+      if ((Date.parse(to) - Date.parse(from)) / 86400000 > 92) { err.textContent = 'Choose a range of at most 92 days.'; return; }
+      Object.assign(state, { period: 'custom', from, to });
+      form.hidden = true;
+      customBtn.setAttribute('aria-expanded', 'false');
+      customBtn.focus();
+      mark(customBtn); syncHidden(); ensureActive();
+    });
+    ensureActive();
+  }
+
+  // Data table popup: htmx fills the dialog, then we open it as a modal (focus is restored to the button on close).
+  document.addEventListener('htmx:afterSwap', (e) => {
+    const body = e.target.closest?.('[data-dialog-body]') || (e.target.matches?.('[data-dialog-body]') ? e.target : null);
+    if (!body) return;
+    const dialog = body.closest('dialog');
+    if (!dialog.open) dialog.showModal();
+    localizeTimes(body);
+    syncExpand(dialog);
+    body.querySelector('h2')?.focus();
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.matches?.('dialog[data-dialog]')) e.target.close(); // click on the backdrop
+    // The custom range floats above the content: close it on outside click or Escape.
+    document.querySelectorAll('[data-range-form]:not([hidden])').forEach((f) => {
+      if (!f.parentElement.contains(e.target)) closeRange(f);
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('[data-range-form]:not([hidden])').forEach((f) => { closeRange(f); f.parentElement.querySelector('[data-period="custom"]').focus(); });
+  });
+  function closeRange(f) {
+    f.hidden = true;
+    f.parentElement.querySelector('[data-period="custom"]').setAttribute('aria-expanded', 'false');
+  }
+  // "Enlarge" makes the popup nearly full screen; the choice survives table reloads inside the dialog.
+  const syncExpand = (dialog) => {
+    const on = dialog.classList.contains('is-wide');
+    const b = dialog.querySelector('[data-expand]');
+    if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? 'Shrink' : 'Enlarge'; }
+  };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest?.('[data-expand]');
+    if (!b) return;
+    const dialog = b.closest('dialog');
+    dialog.classList.toggle('is-wide');
+    syncExpand(dialog);
+  });
+  const localizeTimes = (scope) => scope.querySelectorAll('time[data-local]').forEach((t) => { t.textContent = fmtTime(t.dateTime); });
 
   const initAll = (scope = document) => scope.querySelectorAll('[data-meteo]').forEach(init);
   document.addEventListener('DOMContentLoaded', () => initAll());

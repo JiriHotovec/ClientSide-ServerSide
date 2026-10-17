@@ -21,14 +21,14 @@ it('labels every form control on login and register', function (string $url) {
     expect(count($labels[0]))->toBeGreaterThanOrEqual(count($inputs[0]));
 })->with(['/login', '/register']);
 
-it('renders the dashboard panel with live regions, a captioned table and a chart text alternative', function () {
+it('renders the dashboard panel with live regions, a chart text alternative and a data table popup', function () {
     [$device] = deviceWithData(['is_public' => true]);
 
     $html = $this->get("/devices/{$device->uuid}")->getContent();
 
     expect($html)->toContain('aria-live="polite"')
-        ->toContain('<caption data-caption>')
-        ->toContain('scope="col"')
+        ->toContain('<dialog')
+        ->toContain('Data table')
         ->toContain('role="img" aria-label=')
         ->toContain('aria-pressed="true"');
 });
@@ -48,4 +48,38 @@ it('reports validation errors with aria-invalid and role=alert', function () {
     $this->from('/register')->post('/register', ['name' => '', 'email' => 'bad', 'password' => 'x'])->assertRedirect('/register');
 
     $this->get('/register')->assertSee('aria-invalid="true"', false)->assertSee('role="alert"', false);
+});
+
+it('groups datasets by category into an inline group row with one chart card per dataset', function () {
+    [$device, $temp] = deviceWithData(['is_public' => true]);
+    $temp->update(['category' => 'weather']);
+    $device->types()->attach(\App\Models\MeasurementType::create(['key' => 'humidity', 'name' => 'Humidity', 'unit' => '%', 'category' => 'weather']));
+    $device->types()->attach(\App\Models\MeasurementType::create(['key' => 'co2', 'name' => 'CO2', 'unit' => 'ppm', 'category' => 'air']));
+
+    $html = $this->get("/devices/{$device->uuid}")->getContent();
+
+    expect(substr_count($html, 'data-group-menu'))->toBe(1)
+        ->and(substr_count($html, 'data-card'))->toBe(3) // one card per dataset
+        ->and($html)->toContain('class="group-row"')->toContain('Air quality')->toContain('<small>2</small>')->toContain('<small>1</small>')
+        ->toContain('data-category="weather"')->toContain('data-category="air"')
+        ->toContain('data-group="weather"')->toContain('data-group="air"')->toContain('aria-pressed="true"')
+        ->not->toContain('role="tablist"')->not->toContain('<details class="group-menu"');
+});
+
+it('shows a plain heading instead of a menu when all datasets share one category', function () {
+    [$device] = deviceWithData(['is_public' => true]);
+
+    $html = $this->get("/devices/{$device->uuid}")->getContent();
+
+    expect($html)->not->toContain('data-group-menu')->toContain('toolbar-title')->toContain('data-card');
+});
+
+it('offers a magnifier per chart with an enlarged chart dialog and a floating custom range form', function () {
+    [$device] = deviceWithData(['is_public' => true]);
+
+    $html = $this->get("/devices/{$device->uuid}")->getContent();
+
+    expect(substr_count($html, 'data-zoom '))->toBeGreaterThanOrEqual(1)
+        ->and($html)->toContain('aria-label="Enlarge chart of Temperature"')->toContain('data-zoom-dialog')->toContain('data-zoom-canvas')
+        ->toContain('data-range-form')->toContain('aria-expanded="false"');
 });

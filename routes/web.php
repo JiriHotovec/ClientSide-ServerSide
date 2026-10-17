@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PageController::class, 'welcome'])->name('welcome');
 Route::get('/devices', [PageController::class, 'publicDevices'])->name('devices.index');
 Route::get('/devices/{device}', [PageController::class, 'publicDevice'])->name('devices.show');
+Route::get('/devices/{device}/table/{type}', [PageController::class, 'dataTable'])->name('devices.table');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

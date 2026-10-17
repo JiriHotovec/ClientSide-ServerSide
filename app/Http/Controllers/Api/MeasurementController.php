@@ -26,6 +26,6 @@ class MeasurementController extends Controller
             return response()->json(['message' => 'This device has no such dataset.'], 404);
         }
 
-        return response()->json($service->series($device, $type, $request->query('period', '24h')));
+        return response()->json($service->series($device, $type, $request->range()));
     }
 }

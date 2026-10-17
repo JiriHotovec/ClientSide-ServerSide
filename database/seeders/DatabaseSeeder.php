@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             ['wind_speed', 'Wind speed', 'm/s', 4, 3, 1, '#2a9d8f', 'bar'],
             ['co2', 'CO₂ concentration', 'ppm', 600, 120, 0, '#8d6e63', 'line'],
         ])->mapWithKeys(function ($t) {
-            $m = MeasurementType::create(['key' => $t[0], 'name' => $t[1], 'unit' => $t[2], 'decimals' => $t[5], 'color' => $t[6], 'chart_type' => $t[7]]);
+            $m = MeasurementType::create(['key' => $t[0], 'name' => $t[1], 'unit' => $t[2], 'decimals' => $t[5], 'color' => $t[6], 'chart_type' => $t[7], 'category' => $t[0] === 'co2' ? 'air' : 'weather']);
             $m->forceFill(['is_system' => true, 'is_public' => true])->save();
 
             return [$t[0] => ['model' => $m, 'base' => $t[3], 'amp' => $t[4]]];
@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
         $bob = User::factory()->create(['name' => 'Bob', 'email' => 'bob@example.com']);
 
         // A private type owned by Alice (only she, and admins, can see/use it).
-        MeasurementType::create(['key' => 'soil_moisture', 'name' => 'Soil moisture', 'unit' => '%', 'decimals' => 0, 'color' => '#7a9a01'])
+        MeasurementType::create(['key' => 'soil_moisture', 'name' => 'Soil moisture', 'unit' => '%', 'decimals' => 0, 'color' => '#7a9a01', 'category' => 'water'])
             ->forceFill(['created_by' => $alice->id])->save();
 
         $defs = [

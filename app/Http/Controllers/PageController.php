@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Device;
 use App\Services\MeasurementService;
+use App\Support\TimeRange;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -51,6 +53,43 @@ class PageController extends Controller
         return view('partials.device-panel', [
             'device' => $device->load('types'),
             'endpoint' => url("/api/devices/{$device->uuid}/measurements"),
+        ]);
+    }
+
+    /** htmx popup: aggregated data table of one dataset. Same visibility rules as the dashboards (private => 404 for outsiders). */
+    public function dataTable(Request $request, Device $device, string $type, MeasurementService $service)
+    {
+        abort_unless(Gate::allows('view', $device), 404);
+        $device->load('types');
+        $measurementType = $device->types->firstWhere('key', $type);
+        abort_unless($measurementType, 404);
+
+        $period = (string) $request->query('period', '24h');
+        abort_unless($period === 'custom' || array_key_exists($period, MeasurementService::PERIODS), 422);
+        $tz = (int) $request->query('tz', 0);
+        abort_unless($tz >= -840 && $tz <= 840, 422);
+
+        if ($period === 'custom') {
+            // Default to the last 7 days (local time) when no dates are given yet.
+            $localNow = now()->subMinutes($tz);
+            $from = $request->query('from') ?: $localNow->copy()->subDays(7)->format('Y-m-d\TH:i');
+            $to = $request->query('to') ?: $localNow->format('Y-m-d\TH:i');
+            abort_unless(strtotime((string) $from) !== false && strtotime((string) $to) !== false && strtotime($from) <= strtotime($to), 422);
+            $range = TimeRange::custom($from, $to, $tz);
+            abort_if($range->days() > TimeRange::MAX_DAYS, 422);
+        } else {
+            [$from, $to] = [null, null];
+            $range = TimeRange::preset($period);
+        }
+
+        $bucket = (string) $request->query('bucket', $range->defaultBucket());
+        abort_unless(array_key_exists($bucket, MeasurementService::BUCKETS), 422);
+
+        return view('partials.data-popup', [
+            'device' => $device, 'type' => $measurementType, 'period' => $period, 'bucketKey' => $bucket,
+            'from' => $from, 'to' => $to,
+            'tz' => $tz,
+            'agg' => $service->aggregate($device, $measurementType, $range, $bucket, $tz),
         ]);
     }
 }

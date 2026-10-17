@@ -120,3 +120,27 @@ it('renders formatted values on device cards using the display settings', functi
 
     $this->get('/devices')->assertSee("€\u{00A0}3.14", false);
 });
+
+it('stores a category on a type and rejects unknown categories', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->postJson('/api/measurement-types', ['key' => 'o3', 'name' => 'Ozone', 'unit' => 'ppb', 'category' => 'air'])->assertCreated()->assertJsonPath('data.category', 'air');
+    $this->postJson('/api/measurement-types', ['key' => 'o4', 'name' => 'X', 'unit' => 'x', 'category' => 'nonsense'])->assertUnprocessable()->assertJsonValidationErrors('category');
+    $this->postJson('/api/measurement-types', ['key' => 'o5', 'name' => 'Y', 'unit' => 'y'])->assertCreated()->assertJsonPath('data.category', 'other');
+});
+
+it('lets the type form pick a category and lists it', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get('/manage/types/create')->assertSee('Air quality')->assertSee('Water and soil');
+    $this->post('/manage/types', ['key' => 'soil', 'name' => 'Soil moisture', 'unit' => '%', 'category' => 'water']);
+    $this->get('/manage/types?scope=mine')->assertSee('Water and soil');
+});
+
+it('exposes the category in the measurement response', function () {
+    $type = MeasurementType::factory()->create(['key' => 'temperature', 'category' => 'weather', 'is_public' => true]);
+    [$device] = deviceWithData(['is_public' => true]);
+    $device->types()->sync([$type->id]);
+
+    $this->getJson("/api/public/devices/{$device->uuid}/measurements?type=temperature")->assertJsonPath('type.category', 'weather');
+});
