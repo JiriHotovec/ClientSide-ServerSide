@@ -220,3 +220,21 @@ it('loads the Leaflet stylesheet in the head of the workspace so the map does no
     $head = substr($html, 0, strpos($html, '</head>'));
     expect($head)->toContain('vendor/leaflet/leaflet.css')->and($html)->toContain('vendor/leaflet/leaflet.js');
 });
+
+it('keeps the map dialog outside the device form, because forms cannot be nested', function () {
+    $html = $this->actingAs(User::factory()->create())->get('/manage/devices/create')->getContent();
+
+    $formEnd = strpos($html, '</form>', strpos($html, 'class="form-page"'));
+    $dialog = strpos($html, 'data-map-dialog');
+
+    expect($dialog)->toBeGreaterThan($formEnd)->and($html)->toContain('data-dialog="map-dialog-new"')->toContain('id="map-dialog-new"')
+        ->and(substr($html, $dialog - 120, 120))->toContain('hx-boost="false"'); // the boosted workspace must not hijack the dialog forms
+});
+
+it('rolls the place search results out under the search field, over the map', function () {
+    $html = $this->actingAs(User::factory()->create())->get('/manage/devices/create')->getContent();
+
+    expect($html)->toMatch('/class="map-search-field">.*?data-map-search-input[^>]*aria-expanded="false".*?<ul class="map-results" data-map-results><\/ul>\s*<\/div>/s');
+    $css = file_get_contents(public_path('css/admin.css'));
+    expect($css)->toContain('.map-results { position: absolute;')->toContain('top: calc(100% + .3rem)')->toContain('@keyframes roll-out');
+});

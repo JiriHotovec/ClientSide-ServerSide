@@ -123,7 +123,7 @@ it('renders the chart editor with its rows on the device form', function () {
     $device->types()->attach($this->temp);
     DeviceChart::factory()->for($device)->create(['measurement_type_id' => $this->temp->id, 'kind' => 'step', 'title' => 'Steps']);
 
-    $this->actingAs($user)->get("/manage/devices/{$device->uuid}/edit")->assertSee('charts-editor', false)->assertSee('value="Steps"', false)->assertSee('hx-get="'.route('manage.charts.row').'"', false);
+    $this->actingAs($user)->get("/manage/devices/{$device->uuid}/edit")->assertSee('data-chart-rows', false)->assertSee('value="Steps"', false)->assertSee('data-row-url="'.route('manage.charts.row').'"', false);
     $this->get('/manage/devices/create')->assertSee('Add a chart');
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PullService;
 use App\Support\DisplaySettings;
 use Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -90,15 +91,7 @@ class Device extends Model
     /** Stored errors are English keys (written by the cron job); shown in the viewer's language. */
     public function lastErrorText(): ?string
     {
-        $e = $this->last_error;
-        if ($e === null) {
-            return null;
-        }
-        if (preg_match('/^Data source responded with HTTP (\d+)\.$/', $e, $m)) {
-            return __('Data source responded with HTTP :status.', ['status' => $m[1]]);
-        }
-
-        return __($e);
+        return $this->last_error === null ? null : PullService::translateError($this->last_error);
     }
 
     public static function hashToken(string $token): string

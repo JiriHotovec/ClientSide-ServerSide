@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ManageController::class, 'overview'])->name('overview');
         Route::get('/devices', [ManageController::class, 'devices'])->name('devices');
         Route::post('/devices', [ManageActionController::class, 'storeDevice'])->name('devices.store');
+        Route::post('/devices/test-source', [ManageActionController::class, 'testSource'])->middleware('throttle:source-test')->name('devices.test-source');
         Route::put('/devices/{device}', [ManageActionController::class, 'updateDevice'])->name('devices.update');
         Route::delete('/devices/{device}', [ManageActionController::class, 'destroyDevice'])->name('devices.destroy');
         Route::patch('/devices/{device}/visibility', [ManageActionController::class, 'visibility'])->name('devices.visibility');

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\MeasurementType;
 use App\Support\ChartKinds;
+use App\Support\SourceMapping;
 use App\Support\UrlGuard;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,7 +38,7 @@ class DeviceRequest extends FormRequest
             'type_settings.*.unit' => ['nullable', 'string', 'max:20'],
         ] + MeasurementTypeRequest::displayRules('type_settings.*.', true) + [
             'source_url' => ['nullable', 'url:http,https', 'max:500'],
-            'source_mapping' => ['nullable', 'array'],
+            'source_mapping' => ['required_with:source_url', 'nullable', 'array'],
             'source_mapping.values' => ['required_with:source_mapping', 'array'],
             'source_mapping.values.*' => ['string', 'max:200'],
             'source_mapping.items_path' => ['nullable', 'string', 'max:200'],
@@ -64,6 +65,16 @@ class DeviceRequest extends FormRequest
                 ->map(fn ($c) => ['type' => (int) $c['type'], 'kind' => $c['kind'] ?? 'line', 'title' => filled($c['title'] ?? null) ? trim($c['title']) : null])
                 ->values()->all();
             $this->merge(['types' => $types, 'type_settings' => $settings, 'charts' => $charts, 'is_public' => $this->boolean('is_public')]);
+        }
+
+        if ($this->has('_form')) {
+            if ($this->input('source_mode') === 'push') {
+                $this->merge(['source_url' => null, 'source_mapping' => null]); // "I send the data myself" drops the pull setup
+            } elseif (blank($this->input('source_mapping'))) {
+                // The simple builder (one path per dataset) unless raw JSON was typed into the advanced box.
+                $keys = MeasurementType::whereIn('id', (array) $this->input('types', []))->pluck('key', 'id')->all();
+                $this->merge(['source_mapping' => SourceMapping::fromForm($this->all(), $keys)]);
+            }
         }
 
         // Allow the HTML form to send the mapping as a JSON string.

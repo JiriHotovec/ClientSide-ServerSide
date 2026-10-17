@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Device;
 use App\Models\MeasurementType;
 use App\Services\MeasurementService;
+use App\Support\ChartKinds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -52,7 +53,9 @@ class ManageController extends Controller
         }
 
         return view('manage._chart-row', [
-            'key' => random_int(1000, 999999), 'row' => [],
+            'key' => random_int(1000, 999999),
+            // "One chart per dataset" asks for a row with the dataset and its default style already chosen.
+            'row' => array_filter(['type' => (int) $request->query('pick') ?: null, 'kind' => in_array($request->query('kind'), ChartKinds::keys(), true) ? $request->query('kind') : null]),
             'options' => MeasurementType::visibleTo($request->user())->whereIn('id', $ids)->orderBy('name')->get(),
         ]);
     }

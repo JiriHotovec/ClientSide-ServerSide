@@ -25,6 +25,7 @@ class JsStrings
         'Highest',
         'Value',
         'Location',
+        'Select at least one dataset above first.',
         'Searching…',
         'No places found.',
         'Pin placed. Adjust it if needed and confirm.',

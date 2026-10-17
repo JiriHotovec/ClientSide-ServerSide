@@ -41,33 +41,73 @@ class PullService
             ->all();
     }
 
+    /**
+     * Downloads and decodes the JSON of a source. The connection is pinned to the vetted IP (SSRF guard).
+     *
+     * @return array<mixed>
+     */
+    public function fetchJson(string $url): array
+    {
+        [$host, $port, $ip] = $this->guard->check($url);
+        $response = Http::timeout(10)->retry(2, 200, throw: false)->withoutRedirecting()
+            ->withOptions(['curl' => [CURLOPT_RESOLVE => ["$host:$port:$ip"]]])
+            ->acceptJson()->get($url);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Data source responded with HTTP '.$response->status().'.');
+        }
+        if (strlen($response->body()) > self::MAX_BYTES) {
+            throw new \RuntimeException('Data source response is too large.');
+        }
+        $json = $response->json();
+        if (! is_array($json)) {
+            throw new \RuntimeException('Data source did not return valid JSON.');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Try a source without storing anything (the "Test fetch" button of the device form).
+     *
+     * @return array{ok: bool, error?: string, readings?: list<array{type: string, value: ?float, measured_at: Carbon}>}
+     */
+    public function preview(string $url, array $mapping): array
+    {
+        try {
+            return ['ok' => true, 'readings' => array_slice($this->map($mapping, $this->fetchJson($url)), 0, 30)];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => self::translateError($this->errorKey($e))];
+        }
+    }
+
+    /** Stored errors are English keys; this shows them in the viewer's language. */
+    public static function translateError(string $message): string
+    {
+        if (preg_match('/^Data source responded with HTTP (\d+)\.$/', $message, $m)) {
+            return __('Data source responded with HTTP :status.', ['status' => $m[1]]);
+        }
+
+        return __($message);
+    }
+
+    private function errorKey(Throwable $e): string
+    {
+        return $e instanceof \InvalidArgumentException || $e instanceof \RuntimeException ? $e->getMessage() : 'Data source is unavailable.';
+    }
+
     /** Never throws: failures are stored on the device (last_error) so the UI can explain them. */
     public function pull(Device $device): array
     {
         try {
-            [$host, $port, $ip] = $this->guard->check($device->source_url);
-            $response = Http::timeout(10)->retry(2, 200, throw: false)->withoutRedirecting()
-                ->withOptions(['curl' => [CURLOPT_RESOLVE => ["$host:$port:$ip"]]])
-                ->acceptJson()->get($device->source_url);
-
-            if ($response->failed()) {
-                throw new \RuntimeException('Data source responded with HTTP '.$response->status().'.');
-            }
-            if (strlen($response->body()) > self::MAX_BYTES) {
-                throw new \RuntimeException('Data source response is too large.');
-            }
-            $json = $response->json();
-            if (! is_array($json)) {
-                throw new \RuntimeException('Data source did not return valid JSON.');
-            }
+            $json = $this->fetchJson($device->source_url);
 
             $stored = $this->ingest->store($device, $this->map($device->source_mapping ?? [], $json), 'pull');
             $device->forceFill(['last_fetched_at' => now(), 'last_error' => null])->save();
 
             return ['device' => $device->uuid, 'ok' => true, 'stored' => $stored];
         } catch (Throwable $e) {
-            $message = $e instanceof \InvalidArgumentException || $e instanceof \RuntimeException
-                ? $e->getMessage() : 'Data source is unavailable.';
+            $message = $this->errorKey($e);
             $device->forceFill(['last_fetched_at' => now(), 'last_error' => mb_substr($message, 0, 500)])->save();
 
             return ['device' => $device->uuid, 'ok' => false, 'error' => $message];

@@ -57,6 +57,7 @@
 <script src="{{ asset('vendor/htmx.min.js') }}"></script>
 <script src="{{ asset('js/forms.js') }}"></script>
 <script src="{{ asset('js/manage.js') }}"></script>
+<script src="{{ asset('js/device-form.js') }}"></script>
 @stack('scripts')
 </body>
 </html>

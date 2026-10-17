@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ingest', fn (Request $r) => Limit::perMinute(60)->by(sha1((string) $r->bearerToken()).'|'.$r->ip()));
         RateLimiter::for('cron', fn (Request $r) => Limit::perMinute(10)->by($r->ip()));
         RateLimiter::for('geocode', fn (Request $r) => Limit::perMinute(30)->by($r->user()?->id ?: $r->ip()));
+        RateLimiter::for('source-test', fn (Request $r) => Limit::perMinute(10)->by($r->user()?->id ?: $r->ip()));
         RateLimiter::for('rest', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?: $r->ip()));
     }
 }

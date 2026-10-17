@@ -26,12 +26,6 @@
   // Color swatches in lists (set via CSSOM, which the strict CSP allows).
   const paint = (scope = document) => scope.querySelectorAll('[data-color]').forEach((el) => { el.style.backgroundColor = el.dataset.color; });
 
-  // Collapse a dataset's display settings when it gets unticked.
-  document.addEventListener('change', (e) => {
-    const t = e.target.closest('[data-type-toggle]');
-    if (t && !t.checked) t.closest('.type-pick')?.querySelector('details')?.removeAttribute('open');
-  });
-
   // Account menu: close on Escape (focus back to the trigger) and on outside click.
   document.addEventListener('keydown', (e) => {
     const m = document.querySelector('[data-user-menu][open]');
@@ -40,19 +34,6 @@
   document.addEventListener('click', (e) => {
     const m = document.querySelector('[data-user-menu][open]');
     if (m && !m.contains(e.target)) m.removeAttribute('open');
-  });
-
-  // Chart editor: move or remove a row (the order of the rows is the order of the charts).
-  document.addEventListener('click', (e) => {
-    const row = e.target.closest('[data-chart-row]');
-    if (!row) return;
-    if (e.target.closest('[data-chart-remove]')) { row.remove(); return; }
-    const move = e.target.closest('[data-chart-move]');
-    if (!move) return;
-    const sibling = move.dataset.chartMove === 'up' ? row.previousElementSibling : row.nextElementSibling;
-    if (!sibling) return;
-    move.dataset.chartMove === 'up' ? sibling.before(row) : sibling.after(row);
-    move.focus();
   });
 
   const boot = (scope = document) => { paint(scope); scope.querySelectorAll('[data-type-form]').forEach(preview); };

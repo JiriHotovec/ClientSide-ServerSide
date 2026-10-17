@@ -100,6 +100,12 @@ Pages (all behind login; users see their own devices, administrators can switch 
 - **Chart styles:** line, area, step, bars, points, gauge, wind rose (`App\Support\ChartKinds`). The type sets the default style; the device owner can arrange any number of charts per device (dataset + style + optional title, in order) in the device form (`device_charts` table). A device without an arrangement shows one default chart per dataset.
 - **Maps (OpenStreetMap via vendored Leaflet):** devices have optional `latitude`/`longitude`. The device form opens a map dialog (click, drag the pin, type coordinates or search a place); an empty place name is filled from the pin. The public device list shows all matching devices with a pin on a map, and a device page shows a small map. Place search goes through our proxy (`/geocode/search`, `/geocode/reverse`, login required, throttled, cached 24 h, identifying User-Agent) so the browser never calls Nominatim directly. The CSP only gained `img-src https://tile.openstreetmap.org`.
 
+## 4e. Device form (create/edit)
+One page with four ARIA tabs (Basics, Datasets, Charts, Data source) and a sticky Save bar; without JavaScript the same sections are stacked. Validation errors are listed with links to the tab that holds them and the tab shows an error badge.
+- **Datasets:** search, grouped by category, chips of the selected ones; the appearance of a ticked dataset is collapsed (badge "Default appearance"/"Customized", live preview, only unit/decimals/color visible, the rest under "More options", "Use defaults").
+- **Charts:** "One chart per dataset" shortcut or "Add a chart"; styles are picked as radio cards with icons; rows can be moved and removed.
+- **Data source:** "I send the data myself" (curl example, token generated in place via htmx) or "Fetch from a URL" (preset intervals, one JSON path per dataset instead of raw JSON — built into `source_mapping` by `App\Support\SourceMapping`; raw JSON stays under "Advanced"; **Test fetch** previews the source without saving, `POST /manage/devices/test-source`, throttled, SSRF-guarded).
+
 ## 5. External API integration status
 - **Integration-ready, generic JSON pull**: a device can define `source_url` and a mapping, e.g.
   ```json
@@ -119,7 +125,7 @@ Skip link, landmarks, one `h1` per page, `lang`, labelled controls, `aria-curren
 ## 8. Testing
 `composer test` (Pest 5 on PHPUnit, in-memory SQLite) · `composer test:coverage` (PCOV, fails below 80 %).
 
-Latest result: **294 tests, all passing.**
+Latest result: **346 tests, all passing.**
 
 | File | Covers |
 |---|---|

@@ -7,6 +7,8 @@ use App\Http\Requests\MeasurementTypeRequest;
 use App\Models\Device;
 use App\Models\MeasurementType;
 use App\Services\DeviceService;
+use App\Services\PullService;
+use App\Support\SourceMapping;
 use Illuminate\Http\Request;
 
 /**
@@ -52,11 +54,40 @@ class ManageActionController extends Controller
     }
 
     /** The plain token is flashed once; only its hash is stored. */
-    public function token(Device $device)
+    public function token(Request $request, Device $device)
     {
         $this->authorize('update', $device);
+        $token = $device->regenerateIngestToken();
 
-        return back()->with('status', __('New token for ":name" (shown only once, copy it now): :token. Send readings with "Authorization: Bearer <token>" to POST /api/ingest.', ['name' => $device->name, 'token' => $device->regenerateIngestToken()]));
+        // From the device form the token appears in place (htmx); from the list it is flashed.
+        if ($request->header('HX-Target') === 'token-box') {
+            return view('manage.device._token', ['device' => $device, 'token' => $token]);
+        }
+
+        return back()->with('status', __('New token for ":name" (shown only once, copy it now): :token. Send readings with "Authorization: Bearer <token>" to POST /api/ingest.', ['name' => $device->name, 'token' => $token]));
+    }
+
+    /** htmx: try the pull source typed into the device form without saving anything. */
+    public function testSource(Request $request, PullService $pull)
+    {
+        $url = (string) $request->input('source_url');
+        $valid = filter_var($url, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $url);
+        $keys = MeasurementType::visibleTo($request->user())->whereIn('id', (array) $request->input('types', []))->pluck('key', 'id')->all();
+        $raw = $request->input('source_mapping');
+        $mapping = filled($raw) ? json_decode((string) $raw, true) : SourceMapping::fromForm($request->all(), $keys);
+
+        if (! $valid) {
+            $result = ['ok' => false, 'error' => __('Enter a valid http(s) address first.')];
+        } elseif (! is_array($mapping) || empty($mapping['values'])) {
+            $result = ['ok' => false, 'error' => __('Add the path of at least one dataset first.')];
+        } else {
+            $result = $pull->preview($url, $mapping);
+        }
+
+        return view('manage.device._source-preview', [
+            'result' => $result,
+            'types' => MeasurementType::visibleTo($request->user())->whereIn('key', array_keys($mapping['values'] ?? []))->get()->keyBy('key'),
+        ]);
     }
 
     public function storeType(MeasurementTypeRequest $request)

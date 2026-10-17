@@ -80,16 +80,19 @@
   // ---- Location picker in the device form ----
   function initPicker(root) {
     const q = (s) => root.querySelector(s);
-    const dialog = q('[data-map-dialog]');
+    const dialog = document.getElementById(root.dataset.dialog);
     const latField = q('[data-lat]');
     const lngField = q('[data-lng]');
     const locationInput = root.closest('form').querySelector('[name="location"]');
-    const coords = q('[data-coords]');
+    const coords = root.closest('form').querySelector('[data-coords]');
     const clearBtn = q('[data-map-clear]');
     const dLat = dialog.querySelector('[data-dlg-lat]');
     const dLng = dialog.querySelector('[data-dlg-lng]');
     const results = dialog.querySelector('[data-map-results]');
     const message = dialog.querySelector('[data-map-message]');
+    const searchInput = dialog.querySelector('[data-map-search-input]');
+    // The result list rolls out under the field; aria-expanded tells assistive technology when it is there.
+    const closeResults = () => { results.replaceChildren(); searchInput.setAttribute('aria-expanded', 'false'); };
     let map = null;
     let marker = null;
 
@@ -119,7 +122,7 @@
     }
 
     q('[data-map-open]').addEventListener('click', () => {
-      message.textContent = ''; results.replaceChildren();
+      message.textContent = ''; closeResults();
       dialog.showModal();
       ensureMap();
       const has = latField.value !== '';
@@ -139,7 +142,7 @@
     dialog.querySelector('[data-map-search]').addEventListener('submit', async (e) => {
       e.preventDefault();
       const query = dialog.querySelector('[data-map-search-input]').value.trim();
-      results.replaceChildren();
+      closeResults();
       if (query.length < 2) return;
       message.textContent = t('Searching…');
       try {
@@ -147,9 +150,10 @@
         if (!res.ok) throw new Error();
         const { data } = await res.json();
         message.textContent = data.length ? '' : t('No places found.');
+        if (data.length) searchInput.setAttribute('aria-expanded', 'true');
         data.forEach((p) => {
           const li = el('li'); const b = el('button', p.name); b.type = 'button';
-          b.addEventListener('click', () => { place(p.lat, p.lng, 13); message.textContent = t('Pin placed. Adjust it if needed and confirm.'); });
+          b.addEventListener('click', () => { place(p.lat, p.lng, 13); closeResults(); message.textContent = t('Pin placed. Adjust it if needed and confirm.'); });
           li.append(b); results.append(li);
         });
       } catch (err) { message.textContent = t('The place search failed. Try again later.'); }
@@ -169,7 +173,11 @@
     });
 
     clearBtn.addEventListener('click', () => { latField.value = ''; lngField.value = ''; showCoords(); q('[data-map-open]').focus(); });
-    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+      else if (!e.target.closest('.map-search-field')) closeResults(); // click elsewhere rolls the list up
+    });
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape' && results.children.length) { e.stopPropagation(); e.preventDefault(); closeResults(); } });
     showCoords();
   }
 

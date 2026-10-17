@@ -91,7 +91,7 @@ it('translates the main interface to Czech', function (string $url, string $expe
     ['/dashboard', 'Můj přehled'],
     ['/manage', 'Můj panel'],
     ['/manage/devices', 'Zařízení a zdroje dat'],
-    ['/manage/devices/create', 'Datové sady, které zařízení hlásí'],
+    ['/manage/devices/create', 'Jak zařízení dodává měření?'],
     ['/manage/types', 'Typy měření'],
     ['/manage/types/create', 'Výchozí zobrazení'],
     ['/manage/profile', 'Změnit heslo'],
