@@ -122,3 +122,12 @@ it('shows the visibility of a device in the list without a quick toggle button (
     $this->actingAs($user)->get('/manage/devices')->assertSee('Public')->assertSee('Private')
         ->assertDontSee('Make private')->assertDontSee('Make public')->assertDontSee('/visibility', false);
 });
+
+it('does not put a token button into the actions of the device list (tokens live on the Data source tab)', function () {
+    $user = User::factory()->create();
+    $device = Device::factory()->for($user, 'owner')->create(['name' => 'Roof']);
+
+    $this->actingAs($user)->get('/manage/devices')->assertDontSee('New token')->assertDontSee('/token', false)
+        ->assertSee('Edit')->assertSee('Delete');
+    $this->get("/manage/devices/{$device->uuid}/edit")->assertSee('Generate a new token');
+});
