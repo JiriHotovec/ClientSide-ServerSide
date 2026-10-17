@@ -192,3 +192,12 @@
 p.coords:empty { min-height: 0; margin: 0; }
 .device-form .chart-row { grid-template-columns: 1fr; align-items: start; }
 .device-form .form-bar { background: var(--surface); }
+
+/* One-time token callout */
+.token-callout { margin: 0 0 1.5rem; padding: 1.2rem 1.4rem; border: 2px solid var(--accent); border-radius: var(--radius); background: var(--accent-soft); }
+.token-callout:focus { outline: none; }
+.token-callout:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.token-callout h2 { font-size: 1.4rem; margin-bottom: .5rem; }
+.token-callout p { margin: 0 0 .7rem; }
+.token-callout .token-value { display: block; padding: .8rem 1rem; font-size: 1rem; user-select: all; word-break: break-all; background: var(--surface); }
+.token-callout .actions-row button { margin: 0; }

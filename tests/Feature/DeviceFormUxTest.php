@@ -272,3 +272,38 @@ it('puts the location field and the map button on one row', function () {
 
     expect($html)->toMatch('/class="location-row">\s*<label>Location <input name="location".*?data-location-picker.*?data-map-open>Pick on map<\/button>/s');
 });
+
+it('keeps fragment requests out of the boosted workspace defaults (no #main selection, no URL push)', function () {
+    // <main hx-boost> sets hx-select="#main" and hx-push-url="true" for everything inside; fragment buttons must opt out,
+    // otherwise htmx selects nothing from the fragment and pushes the POST URL into the address bar (reload => 405).
+    $device = Device::factory()->for($this->user, 'owner')->create();
+    $this->actingAs($this->user);
+
+    $form = $this->get("/manage/devices/{$device->uuid}/edit")->getContent();
+    foreach (['hx-post="'.route('manage.devices.token', $device).'"', 'hx-post="'.route('manage.devices.test-source').'"', 'hx-get="'.route('manage.charts.row').'"'] as $needle) {
+        $tag = substr($form, strpos($form, $needle) - 20, 700);
+        expect($tag)->toContain('hx-select="unset"')->toContain('hx-push-url="false"');
+    }
+    expect($form)->toMatch('/<ol id="chart-rows"[^>]*hx-select="unset"[^>]*hx-push-url="false"/');
+
+    $profile = $this->get('/manage/profile')->getContent();
+    expect(substr_count($profile, 'hx-select="unset" hx-push-url="false"'))->toBe(2);
+});
+
+it('sends a GET to the token URL (e.g. a reload of a stale history entry) to the device instead of a 405', function () {
+    $device = Device::factory()->for($this->user, 'owner')->create();
+
+    $this->actingAs($this->user)->get("/manage/devices/{$device->uuid}/token")->assertRedirect(route('manage.devices.edit', $device));
+    $this->actingAs(User::factory()->create())->followingRedirects()->get("/manage/devices/{$device->uuid}/token")->assertForbidden();
+});
+
+it('does not send the device form\'s PUT method override with fragment buttons that sit inside the form', function () {
+    // htmx adds the values of the enclosing <form> to POSTs; "_method=PUT" would turn the POST into a PUT and give a 405.
+    $device = Device::factory()->for($this->user, 'owner')->create();
+    $form = $this->actingAs($this->user)->get("/manage/devices/{$device->uuid}/edit")->getContent();
+
+    expect($form)->toContain('name="_method" value="PUT"');
+    foreach (['hx-post="'.route('manage.devices.token', $device).'"' => 'hx-params="none"', 'hx-post="'.route('manage.devices.test-source').'"' => 'hx-params="not _method"'] as $button => $params) {
+        expect(substr($form, strpos($form, $button) - 20, 800))->toContain($params);
+    }
+});

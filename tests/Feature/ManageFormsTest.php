@@ -61,9 +61,10 @@ it('deletes a device, toggles visibility and shows a new token once', function (
     $this->from('/manage/devices')->patch("/manage/devices/{$device->uuid}/visibility", ['is_public' => 1])->assertRedirect('/manage/devices');
     expect($device->fresh()->is_public)->toBeTrue();
 
-    $this->from('/manage/devices')->post("/manage/devices/{$device->uuid}/token")->assertSessionHas('status', fn ($m) => str_contains($m, 'mv_'));
-    $this->get('/manage/devices')->assertSee('New token for');
-    $this->get('/manage/devices')->assertDontSee('New token for'); // flashed only once
+    $this->from('/manage/devices')->post("/manage/devices/{$device->uuid}/token")->assertSessionHas('token_notice', fn ($n) => str_starts_with($n['token'], 'mv_') && $n['name'] === $device->name);
+    $res = $this->get('/manage/devices')->assertSee('New token for')->assertSee('data-token-callout', false)->assertSee('data-token-copy', false)->assertSee('Shown only once');
+    expect($res->getContent())->toMatch('/data-token-value>mv_[A-Za-z0-9]{40}</');
+    $this->get('/manage/devices')->assertDontSee('data-token-callout', false); // flashed only once
 
     $this->delete("/manage/devices/{$device->uuid}")->assertRedirect(route('manage.devices'));
     $this->assertDatabaseMissing('devices', ['id' => $device->id]);
@@ -134,4 +135,12 @@ it('does not boost device card links, which lead to a different page than the li
     Device::factory()->public()->create();
 
     $this->get('/en/devices')->assertSee('class="device-card"', false)->assertSee('hx-boost="false"', false);
+});
+
+it('shows the generated token in a callout in Czech and keeps it out of the status line', function () {
+    $user = User::factory()->create();
+    $device = Device::factory()->for($user, 'owner')->create(['name' => 'Roof']);
+
+    $this->actingAs($user)->from('/manage/devices')->post("/manage/devices/{$device->uuid}/token", [], ['Accept-Language' => 'cs'])->assertSessionHas('status', 'Token pro „Roof“ byl vygenerován.');
+    $this->get('/manage/devices', ['Accept-Language' => 'cs'])->assertSee('Nový token pro Roof')->assertSee('Zkopírovat token')->assertSee('Zobrazí se jen jednou');
 });

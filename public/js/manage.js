@@ -36,7 +36,24 @@
     if (m && !m.contains(e.target)) m.removeAttribute('open');
   });
 
+  // One-time token callout: copy button, dismiss, and focus so it cannot be missed.
+  document.addEventListener('click', async (e) => {
+    const callout = e.target.closest('[data-token-callout]');
+    if (!callout) return;
+    if (e.target.closest('[data-token-dismiss]')) { callout.remove(); return; }
+    const copy = e.target.closest('[data-token-copy]');
+    if (!copy) return;
+    const value = callout.querySelector('[data-token-value]').textContent.trim();
+    try { await navigator.clipboard.writeText(value); copy.textContent = MV.t('Copied.'); } catch (err) {
+      const range = document.createRange(); range.selectNodeContents(callout.querySelector('[data-token-value]'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range); // fall back to a selection the user can copy
+    }
+    setTimeout(() => { copy.textContent = copy.dataset.label; }, 2500);
+  });
+  const focusToken = () => document.querySelector('[data-token-callout]')?.focus();
+
   const boot = (scope = document) => { paint(scope); scope.querySelectorAll('[data-type-form]').forEach(preview); };
-  document.addEventListener('DOMContentLoaded', () => boot());
+  document.addEventListener('DOMContentLoaded', () => { boot(); focusToken(); });
+  document.addEventListener('htmx:afterSettle', focusToken);
   document.addEventListener('htmx:afterSettle', (e) => boot(e.target.isConnected ? e.target : document));
 })();

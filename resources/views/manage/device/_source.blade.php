@@ -25,7 +25,7 @@
   -H "Content-Type: application/json" \
   -d '{"measurements":[{"type":"{{ $device?->types->first()?->key ?? 'temperature' }}","value":21.4}]}'</code></pre>
     @if($device)
-        <button type="button" class="outline small" hx-post="{{ route('manage.devices.token', $device) }}" hx-target="#token-box" hx-swap="innerHTML" hx-confirm="{{ __('Generate a new ingest token? The previous token stops working.') }}">{{ __('Generate a new token') }}</button>
+        <button type="button" class="outline small" hx-post="{{ route('manage.devices.token', $device) }}" hx-target="#token-box" hx-select="unset" hx-push-url="false" hx-params="none" hx-swap="innerHTML" hx-confirm="{{ __('Generate a new ingest token? The previous token stops working.') }}">{{ __('Generate a new token') }}</button>
         <div id="token-box" aria-live="polite">
             <p><small>{{ $device->ingest_token_hash ? __('This device already has a token. Generating a new one replaces it.') : __('This device has no token yet.') }}</small></p>
         </div>
@@ -66,6 +66,6 @@
             <small id="map-help">{{ __('When filled, this replaces the fields above. Optional "items_path" for lists.') }}</small></label>
     </details>
 
-    <button type="button" class="outline small" hx-post="{{ route('manage.devices.test-source') }}" hx-include="[data-source-panel='pull'], [name='types[]']:checked" hx-target="#source-preview" hx-swap="innerHTML" hx-disabled-elt="this">{{ __('Test fetch') }}</button>
+    <button type="button" class="outline small" hx-post="{{ route('manage.devices.test-source') }}" hx-include="[data-source-panel='pull'], [name='types[]']:checked" hx-target="#source-preview" hx-select="unset" hx-push-url="false" hx-params="not _method" hx-swap="innerHTML" hx-disabled-elt="this">{{ __('Test fetch') }}</button>
     <div id="source-preview" class="source-preview" aria-live="polite"></div>
 </div>

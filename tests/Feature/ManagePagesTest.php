@@ -105,3 +105,11 @@ it('only lets the creator or an admin open the type edit page', function () {
     $this->actingAs(User::factory()->create())->get("/manage/types/{$type->id}/edit")->assertForbidden();
     $this->actingAs(User::factory()->admin()->create())->get("/manage/types/{$type->id}/edit")->assertOk();
 });
+
+it('does not offer creating a device on the devices and data sources page (it lives in the overview)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get('/manage/devices')->assertDontSee(route('manage.devices.create'), false)->assertDontSee('Add a device');
+    $this->get('/manage/devices?q=nothing')->assertSee('No devices match.')->assertDontSee(route('manage.devices.create'), false);
+    $this->get('/manage')->assertSee(route('manage.devices.create'), false)->assertSee('Add a device');
+});

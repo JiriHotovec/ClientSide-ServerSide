@@ -64,7 +64,9 @@ class ManageActionController extends Controller
             return view('manage.device._token', ['device' => $device, 'token' => $token]);
         }
 
-        return back()->with('status', __('New token for ":name" (shown only once, copy it now): :token. Send readings with "Authorization: Bearer <token>" to POST /api/ingest.', ['name' => $device->name, 'token' => $token]));
+        // The plain token is shown once in a prominent callout (see the workspace layout), never stored.
+        return back()->with('status', __('Token for ":name" was generated.', ['name' => $device->name]))
+            ->with('token_notice', ['name' => $device->name, 'token' => $token]);
     }
 
     /** htmx: try the pull source typed into the device form without saving anything. */

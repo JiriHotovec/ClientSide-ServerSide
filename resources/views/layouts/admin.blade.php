@@ -48,6 +48,18 @@
     </nav>
 
     <main id="main" tabindex="-1" class="admin-main" hx-boost="true" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:window:top" hx-push-url="true" hx-select-oob="#admin-nav">
+        @if($notice = session('token_notice'))
+            <section class="token-callout" role="alert" tabindex="-1" data-token-callout aria-labelledby="token-callout-title">
+                <h2 id="token-callout-title">{{ __('New token for :name', ['name' => $notice['name']]) }}</h2>
+                <p>{{ __('Shown only once. Copy it now, you will not be able to see it again. The previous token no longer works.') }}</p>
+                <p><code class="token-value" data-token-value>{{ $notice['token'] }}</code></p>
+                <p><small>{{ __('Send readings with "Authorization: Bearer <token>" to POST /api/ingest.') }}</small></p>
+                <p class="actions-row">
+                    <button type="button" data-token-copy data-label="{{ __('Copy token') }}">{{ __('Copy token') }}</button>
+                    <button type="button" class="outline secondary" data-token-dismiss>{{ __('Dismiss') }}</button>
+                </p>
+            </section>
+        @endif
         <div role="status" aria-live="polite" data-manage-status class="status">{{ session('status') }}</div>
         <div role="alert" data-htmx-error class="status status-error"></div>
         @yield('content')

@@ -1,7 +1,7 @@
 <section aria-labelledby="pw-h">
     <h2 id="pw-h">{{ __('Change password') }}</h2>
     @if(!empty($done))<p class="status" role="status">{{ $done }}</p>@endif
-    <form method="post" action="{{ route('manage.profile.password') }}" hx-put="{{ route('manage.profile.password') }}" hx-target="closest section" hx-swap="outerHTML" hx-disabled-elt="find button">
+    <form method="post" action="{{ route('manage.profile.password') }}" hx-put="{{ route('manage.profile.password') }}" hx-target="closest section" hx-select="unset" hx-push-url="false" hx-swap="outerHTML" hx-disabled-elt="find button">
         @csrf @method('PUT')
         <label>{{ __('Current password') }}
             <input type="password" name="current_password" required autocomplete="current-password" @if(!empty($err['current_password'])) aria-invalid="true" aria-describedby="cur-err" @endif>

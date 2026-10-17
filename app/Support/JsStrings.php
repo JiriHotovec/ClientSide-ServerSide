@@ -25,6 +25,7 @@ class JsStrings
         'Highest',
         'Value',
         'Location',
+        'Copied.',
         'Select at least one dataset above first.',
         'Searching…',
         'No places found.',

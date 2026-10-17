@@ -6,12 +6,11 @@
         <h1>{{ __('Devices and data sources') }}</h1>
         <p class="lead">{{ __('Visibility, how each device gets its data, and whether the last update worked.') }}</p>
     </div>
-    <a role="button" href="{{ route('manage.devices.create') }}">{{ __('Add a device') }}</a>
 </header>
 @include('manage._device-filters', ['withSource' => true])
 <div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($devices->isEmpty())
-    <p class="empty" role="status">{{ __('No devices match.') }} <a href="{{ route('manage.devices.create') }}">{{ __('Add a device') }}</a> {{ __('or change the filters.') }}</p>
+    <p class="empty" role="status">{{ __('No devices match.') }} {{ __('Change the filters.') }}</p>
 @else
 <div class="table-wrap">
 <table>

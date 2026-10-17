@@ -8,6 +8,7 @@ use App\Http\Controllers\ManageController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SeoController;
+use App\Models\Device;
 use App\Models\User;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
@@ -62,6 +63,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/devices/{device}', [ManageActionController::class, 'destroyDevice'])->name('devices.destroy');
         Route::patch('/devices/{device}/visibility', [ManageActionController::class, 'visibility'])->name('devices.visibility');
         Route::post('/devices/{device}/token', [ManageActionController::class, 'token'])->name('devices.token');
+        // A reload of an address that ended up in the history (the token form posts here) lands on the device instead of a 405.
+        Route::get('/devices/{device}/token', fn (Device $device) => redirect()->route('manage.devices.edit', $device));
         Route::post('/types', [ManageActionController::class, 'storeType'])->name('types.store');
         Route::put('/types/{measurementType}', [ManageActionController::class, 'updateType'])->name('types.update');
         Route::delete('/types/{measurementType}', [ManageActionController::class, 'destroyType'])->name('types.destroy');
