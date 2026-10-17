@@ -21,8 +21,9 @@
     <label>{{ __('Chart type') }}
         <select name="{{ $name('chart_type') }}" data-field="chart_type">
             @if($inherit)<option value="">{{ __('Use default') }}</option>@endif
-            <option value="line" @selected(($v['chart_type'] ?? ($inherit ? '' : 'line')) === 'line')>{{ __('Line') }}</option>
-            <option value="bar" @selected(($v['chart_type'] ?? '') === 'bar')>{{ __('Bars') }}</option>
+            @foreach(\App\Support\ChartKinds::ALL as $k => $l)
+                <option value="{{ $k }}" @selected(($v['chart_type'] ?? ($inherit ? '' : 'line')) === $k)>{{ __($l) }}</option>
+            @endforeach
         </select></label>
     <label>{{ __('Chart color') }}
         <input type="color" name="{{ $name('color') }}" value="{{ $v['color'] ?? ($defaults['color'] ?? '#0077b6') }}" data-field="color" data-default="{{ $defaults['color'] ?? '' }}">

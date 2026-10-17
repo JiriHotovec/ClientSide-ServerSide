@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Device;
 use App\Models\User;
+use App\Support\DisplaySettings;
 
 class DeviceService
 {
@@ -14,6 +15,7 @@ class DeviceService
         $device->is_public = (bool) ($data['is_public'] ?? false);
         $device->save();
         $this->syncTypes($device, $data['types'] ?? [], $data['type_settings'] ?? []);
+        $this->syncCharts($device, $data['charts'] ?? []);
 
         return $device;
     }
@@ -27,6 +29,9 @@ class DeviceService
         $device->save();
         if (array_key_exists('types', $data)) {
             $this->syncTypes($device, $data['types'], $data['type_settings'] ?? []);
+        }
+        if (array_key_exists('charts', $data)) {
+            $this->syncCharts($device, $data['charts']);
         }
 
         return $device;
@@ -45,15 +50,31 @@ class DeviceService
     {
         $sync = [];
         foreach ($ids as $id) {
-            $row = array_intersect_key($settings[$id] ?? [], array_flip(\App\Support\DisplaySettings::FIELDS));
-            $sync[$id] = array_map(fn ($v) => $v === '' ? null : $v, $row) + array_fill_keys(\App\Support\DisplaySettings::FIELDS, null);
+            $row = array_intersect_key($settings[$id] ?? [], array_flip(DisplaySettings::FIELDS));
+            $sync[$id] = array_map(fn ($v) => $v === '' ? null : $v, $row) + array_fill_keys(DisplaySettings::FIELDS, null);
         }
         $device->types()->sync($sync);
+        $device->charts()->whereNotIn('measurement_type_id', $ids)->delete(); // charts of removed datasets go away too
+    }
+
+    /**
+     * Replaces the arranged charts; the order of the list is the display order.
+     *
+     * @param  list<array{type: int, kind: string, title: ?string}>  $charts
+     */
+    private function syncCharts(Device $device, array $charts): void
+    {
+        $device->charts()->delete();
+        foreach (array_values($charts) as $position => $chart) {
+            $device->charts()->create([
+                'measurement_type_id' => $chart['type'], 'kind' => $chart['kind'], 'title' => $chart['title'] ?? null, 'position' => $position,
+            ]);
+        }
     }
 
     private function attributes(array $data): array
     {
-        $attrs = array_intersect_key($data, array_flip(['name', 'description', 'location', 'source_url', 'source_mapping', 'fetch_interval_min']));
+        $attrs = array_intersect_key($data, array_flip(['name', 'description', 'location', 'latitude', 'longitude', 'source_url', 'source_mapping', 'fetch_interval_min']));
         if (isset($attrs['source_mapping']) && is_string($attrs['source_mapping'])) {
             $attrs['source_mapping'] = json_decode($attrs['source_mapping'], true);
         }

@@ -23,11 +23,14 @@ class PageController extends Controller
     public function publicDevices(MeasurementService $service)
     {
         $search = trim((string) request('q', ''));
-        $devices = Device::public()->with('types')
-            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")->orWhere('location', 'like', "%{$search}%")))
-            ->orderBy('name')->paginate(9)->withQueryString();
+        $query = Device::public()
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")->orWhere('location', 'like', "%{$search}%")));
+        $devices = (clone $query)->with('types')->orderBy('name')->paginate(9)->withQueryString();
+        // Every matching device with a pin (not only this page) goes on the map.
+        $mapDevices = $query->whereNotNull('latitude')->whereNotNull('longitude')->orderBy('name')->limit(500)->get()
+            ->map(fn ($d) => ['name' => $d->name, 'location' => $d->location, 'lat' => $d->latitude, 'lng' => $d->longitude, 'url' => route('devices.show', $d)])->values();
 
-        return view('devices.index', ['devices' => $devices, 'search' => $search, 'snaps' => $devices->getCollection()->mapWithKeys(fn ($d) => [$d->id => $service->snapshot($d)])]);
+        return view('devices.index', ['devices' => $devices, 'mapDevices' => $mapDevices, 'search' => $search, 'snaps' => $devices->getCollection()->mapWithKeys(fn ($d) => [$d->id => $service->snapshot($d)])]);
     }
 
     public function publicDevice(Device $device)

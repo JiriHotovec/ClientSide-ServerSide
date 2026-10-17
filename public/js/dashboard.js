@@ -20,25 +20,105 @@
     return e;
   };
 
-  // Chart.js configuration shared by the card chart and the enlarged (zoom) chart.
-  function buildConfig(d, label, line) {
+  // Compass names of the 16 wind-rose sectors (north first).
+  const COMPASS = {
+    en: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'],
+    cs: ['S', 'SSV', 'SV', 'VSV', 'V', 'VJV', 'JV', 'JJV', 'J', 'JJZ', 'JZ', 'ZJZ', 'Z', 'ZSZ', 'SZ', 'SSZ'],
+  };
+
+  const validValues = (d) => d.data.map((r) => r.value).filter((v) => v !== null);
+
+  // Chart.js configuration shared by the card chart and the enlarged (zoom) chart. `kind` is the chart style.
+  function buildConfig(d, label, line, kind) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const css = getComputedStyle(document.documentElement);
+    const grid = css.getPropertyValue('--line').trim() || '#ddd';
+    const base = { animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false };
+    const shortTime = (ms) => new Date(ms).toLocaleString(MV.locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    if (kind === 'gauge') return gaugeConfig(d, line, grid, base);
+    if (kind === 'rose') return roseConfig(d, line, base);
+
+    const timeAxis = {
+      x: { ticks: { maxTicksLimit: 8, callback(v) { return shortTime(kind === 'scatter' ? v : this.getLabelForValue(v)); } } },
+      y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
+    };
+    const tooltip = {
+      callbacks: {
+        title: (i) => fmtTime(kind === 'scatter' ? i[0].parsed.x : i[0].label),
+        label: (i) => { const v = i.parsed.y ?? i.raw; return v === null || v === undefined ? t('Missing value') : fmtValue(v, d.display); },
+      },
+    };
+    const plugins = { legend: { display: true }, tooltip };
+    const point = d.data.length > 100 ? 0 : 3;
+
+    if (kind === 'scatter') { // missing values are simply not drawn
+      return {
+        type: 'scatter',
+        data: { datasets: [{ label, data: d.data.filter((r) => r.value !== null).map((r) => ({ x: Date.parse(r.measured_at), y: r.value })), borderColor: line, backgroundColor: line, pointRadius: point || 2 }] },
+        options: { ...base, plugins, scales: timeAxis },
+      };
+    }
+
+    const asBar = kind === 'bar';
     return {
-      type: d.display.chart_type,
+      type: asBar ? 'bar' : 'line',
       data: {
         labels: d.data.map((r) => r.measured_at),
         datasets: [{
           label, data: d.data.map((r) => r.value), spanGaps: false, // null => gap in the line, never 0
-          borderColor: line, backgroundColor: line, borderWidth: d.display.chart_type === 'bar' ? 0 : 2.5, pointRadius: d.data.length > 100 ? 0 : 3, tension: 0.2,
+          borderColor: line, backgroundColor: kind === 'area' ? `${line}33` : line, fill: kind === 'area',
+          stepped: kind === 'step' ? 'middle' : false, borderWidth: asBar ? 0 : 2.5, pointRadius: point, tension: kind === 'step' ? 0 : 0.2,
         }],
       },
-      options: {
-        animation: reduce ? false : undefined, responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: true }, tooltip: { callbacks: { title: (i) => fmtTime(i[0].label), label: (i) => (i.raw === null ? t('Missing value') : fmtValue(i.raw, d.display)) } } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 8, callback(v) { return new Date(this.getLabelForValue(v)).toLocaleString(MV.locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } } },
-          y: { min: d.display.y_min ?? undefined, max: d.display.y_max ?? undefined, title: { display: true, text: d.type.unit }, ticks: { callback: (v) => fmtValue(v, d.display, false) } },
+      options: { ...base, plugins, scales: timeAxis },
+    };
+  }
+
+  // Half-circle gauge of the latest valid value between the axis minimum and maximum (or the period's range).
+  function gaugeConfig(d, line, grid, base) {
+    const vals = validValues(d);
+    const latest = d.summary.latest?.value ?? vals[vals.length - 1] ?? 0;
+    const min = d.display.y_min ?? Math.min(...vals, latest);
+    const max = d.display.y_max ?? Math.max(...vals, latest);
+    const span = Math.max(max - min, 1e-9);
+    const share = Math.min(Math.max((latest - min) / span, 0), 1);
+    return {
+      type: 'doughnut',
+      data: { labels: [t('Value'), ''], datasets: [{ data: [share * span, (1 - share) * span], backgroundColor: [line, grid], borderWidth: 0 }] },
+      options: { ...base, rotation: -90, circumference: 180, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+      plugins: [{
+        id: 'gaugeText',
+        afterDraw(chart) {
+          const arc = chart.getDatasetMeta(0).data[0];
+          if (!arc) return;
+          const { ctx } = chart;
+          ctx.save();
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#000';
+          ctx.textAlign = 'center';
+          ctx.font = `500 ${Math.round(arc.outerRadius / 3.2)}px ${getComputedStyle(document.body).fontFamily}`;
+          ctx.fillText(fmtValue(latest, d.display), arc.x, arc.y - arc.outerRadius * 0.12);
+          ctx.font = `400 ${Math.round(arc.outerRadius / 9)}px ${getComputedStyle(document.body).fontFamily}`;
+          ctx.fillText(`${fmtValue(min, d.display, false)} – ${fmtValue(max, d.display)}`, arc.x, arc.y + arc.outerRadius * 0.12);
+          ctx.restore();
         },
+      }],
+    };
+  }
+
+  // Wind rose: how often the wind (or any direction in degrees) came from each of 16 compass sectors.
+  function roseConfig(d, line, base) {
+    const counts = new Array(16).fill(0);
+    validValues(d).forEach((deg) => { counts[Math.floor((((deg % 360) + 360) % 360) / 22.5 + 0.5) % 16] += 1; });
+    const total = counts.reduce((a, b) => a + b, 0) || 1;
+    const names = COMPASS[MV.locale] || COMPASS.en;
+    return {
+      type: 'polarArea',
+      data: { labels: names, datasets: [{ data: counts, backgroundColor: `${line}99`, borderColor: line, borderWidth: 1 }] },
+      options: {
+        ...base,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => `${i.label}: ${Math.round((i.raw / total) * 100)} %` } } },
+        scales: { r: { ticks: { display: false }, angleLines: { display: true } } },
       },
     };
   }
@@ -57,15 +137,16 @@
     const warning = q('[data-source-warning]');
     const hideAll = () => ['[data-stats]', '[data-chart-wrap]'].forEach((s) => { q(s).hidden = true; });
     const type = card.dataset.type;
+    const kind = card.dataset.kind || null;
+    let kindOf = (d) => kind || d.display.chart_type;
     let chart = null;
-    let controller = null;
+    let seq = 0; // ignores answers of outdated requests
     let loadedKey = null;
     let last = null;
     const zoomBtn = q('[data-zoom]');
 
     async function load() {
-      controller?.abort();
-      controller = new AbortController();
+      const mine = ++seq;
       loadedKey = null;
       last = null;
       zoomBtn.hidden = true;
@@ -74,24 +155,16 @@
       warning.hidden = true;
       hideAll();
 
-      const range = state.period === 'custom' ? `&from=${encodeURIComponent(state.from)}&to=${encodeURIComponent(state.to)}&tz=${state.tz}` : '';
-      const url = `${root.dataset.endpoint}?period=${encodeURIComponent(state.period)}${range}&type=${encodeURIComponent(type)}`;
       try {
-        const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin', signal: controller.signal });
-        if (!res.ok) {
-          const body = res.status === 422 ? await res.json().catch(() => null) : null;
-          if (body?.errors) throw new Error(Object.values(body.errors).flat()[0]);
-          const msg = { 401: t('Please log in again.'), 403: t('You are not allowed to view this device.'), 404: t('This dataset or device is not available.') }[res.status]
-            || t('The server could not deliver the data right now. Please try again later.');
-          throw new Error(msg);
-        }
-        render(await res.json());
+        const d = await state.series(root.dataset.endpoint, type);
+        if (mine !== seq) return;
+        render(d);
         loadedKey = state.key();
       } catch (err) {
-        if (err.name === 'AbortError') return;
+        if (mine !== seq) return;
         status.textContent = err instanceof TypeError ? t('Could not reach the server. Check your connection and try again.') : err.message;
       } finally {
-        status.removeAttribute('aria-busy');
+        if (mine === seq) status.removeAttribute('aria-busy');
       }
     }
 
@@ -119,14 +192,14 @@
       const canvas = q('[data-chart]');
       chart?.destroy();
       if (!window.Chart) return; // the data table popup remains available as the text alternative
-      chart = new Chart(canvas, buildConfig(d, label, chartColors(d)));
+      chart = new Chart(canvas, buildConfig(d, label, chartColors(d), kindOf(d)));
       canvas.parentElement.classList.add('chart-box');
     }
 
     // Lowest / average / highest of the valid values; missing values are skipped, never counted as zero.
     function renderStats(d) {
       const vals = d.data.map((r) => r.value).filter((v) => v !== null);
-      if (!vals.length) return;
+      if (!vals.length || kindOf(d) === 'rose') return; // an average of compass degrees would be meaningless
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
       q('[data-stat="min"]').textContent = fmtValue(Math.min(...vals), d.display);
       q('[data-stat="avg"]').textContent = fmtValue(avg, d.display);
@@ -135,7 +208,18 @@
     }
 
     // Loads only when the card is visible and its data is missing or for another period (lazy for hidden tabs).
-    return { ensure() { if (loadedKey !== state.key()) load(); }, data: () => last };
+    return { ensure() { if (loadedKey !== state.key()) load(); }, data: () => last, kind: () => kindOf(last) };
+  }
+
+  async function fetchSeries(url) {
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+    if (!res.ok) {
+      const body = res.status === 422 ? await res.json().catch(() => null) : null;
+      if (body?.errors) throw new Error(Object.values(body.errors).flat()[0]);
+      throw new Error({ 401: t('Please log in again.'), 403: t('You are not allowed to view this device.'), 404: t('This dataset or device is not available.') }[res.status]
+        || t('The server could not deliver the data right now. Please try again later.'));
+    }
+    return res.json();
   }
 
   function init(root) {
@@ -143,7 +227,21 @@
     root.dataset.ready = '1';
     const groups = [...root.querySelectorAll('[data-group]')];
     if (!groups.length) return; // device without datasets
-    const state = { period: '24h', from: '', to: '', tz: new Date().getTimezoneOffset(), key() { return this.period === 'custom' ? `custom:${this.from}:${this.to}` : this.period; } };
+    const state = {
+      period: '24h', from: '', to: '', tz: new Date().getTimezoneOffset(),
+      key() { return this.period === 'custom' ? `custom:${this.from}:${this.to}` : this.period; },
+      cache: new Map(),
+      // One request per dataset and period, shared by all charts of the same dataset.
+      series(endpoint, type) {
+        const k = `${this.key()}|${type}`;
+        if (!this.cache.has(k)) {
+          const range = this.period === 'custom' ? `&from=${encodeURIComponent(this.from)}&to=${encodeURIComponent(this.to)}&tz=${this.tz}` : '';
+          const p = fetchSeries(`${endpoint}?period=${encodeURIComponent(this.period)}${range}&type=${encodeURIComponent(type)}`).catch((e) => { this.cache.delete(k); throw e; });
+          this.cache.set(k, p);
+        }
+        return this.cache.get(k);
+      },
+    };
     const cards = new Map([...root.querySelectorAll('[data-card]')].map((c) => [c, makeCard(root, c, state)]));
     let active = groups[0];
 
@@ -159,6 +257,10 @@
       row.querySelectorAll('button[data-category]').forEach((b) => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
       groups.forEach((g) => { g.hidden = g.dataset.group !== btn.dataset.category; });
       active = groups.find((g) => g.dataset.group === btn.dataset.category);
+      const onMap = active.dataset.group === 'location';
+      const controls = root.querySelector('.range-controls');
+      if (controls) controls.hidden = onMap; // the time period means nothing for the map
+      active.querySelectorAll('[data-static-map]').forEach((n) => document.dispatchEvent(new CustomEvent('meteo:map-visible', { detail: n })));
       ensureActive();
     }));
 
@@ -178,7 +280,7 @@
       }));
       zoom.showModal();
       zoomChart?.destroy();
-      zoomChart = new Chart(zoom.querySelector('[data-zoom-canvas]'), buildConfig(d, label, chartColors(d)));
+      zoomChart = new Chart(zoom.querySelector('[data-zoom-canvas]'), buildConfig(d, label, chartColors(d), cards.get(card).kind()));
       zoom.querySelector('[data-zoom-title]').focus();
     }));
     zoom?.addEventListener('close', () => { zoomChart?.destroy(); zoomChart = null; });

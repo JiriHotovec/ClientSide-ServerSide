@@ -38,8 +38,22 @@ class ManageController extends Controller
         $this->authorize('update', $device);
 
         return view('manage.device-form', [
-            'device' => $device->load('types'),
+            'device' => $device->load('types', 'charts'),
             'types' => MeasurementType::visibleTo($device->owner)->orderBy('name')->get(),
+        ]);
+    }
+
+    /** htmx fragment: one more row in the chart editor, limited to the datasets ticked in the form. */
+    public function chartRow(Request $request)
+    {
+        $ids = array_map('intval', (array) $request->query('types', []));
+        if ($ids === []) {
+            return response('<li class="empty" role="status">'.e(__('Select at least one dataset above first.')).'</li>');
+        }
+
+        return view('manage._chart-row', [
+            'key' => random_int(1000, 999999), 'row' => [],
+            'options' => MeasurementType::visibleTo($request->user())->whereIn('id', $ids)->orderBy('name')->get(),
         ]);
     }
 

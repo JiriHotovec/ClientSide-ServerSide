@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Device;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Device */
+/** @mixin Device */
 class DeviceResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -18,9 +19,14 @@ class DeviceResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'location' => $this->location,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'is_public' => $this->is_public,
             'types' => $this->whenLoaded('types', fn () => $this->types->map(fn ($t) => [
                 'id' => $t->id, 'key' => $t->key, 'name' => $t->name, 'unit' => $t->unit, 'category' => $t->category,
+            ])),
+            'charts' => $this->whenLoaded('charts', fn () => $this->charts->map(fn ($c) => [
+                'type' => $c->type->key, 'kind' => $c->kind, 'title' => $c->title,
             ])),
             // Owner/admin-only configuration is never exposed on public responses.
             $this->mergeWhen($manage, [

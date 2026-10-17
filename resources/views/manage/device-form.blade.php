@@ -15,6 +15,32 @@
         <label>{{ __('Name') }} <input name="name" required maxlength="100" value="{{ old('name', $device?->name) }}"></label>
         <label>{{ __('Location') }} <input name="location" maxlength="100" value="{{ old('location', $device?->location) }}"></label>
     </div>
+    <div class="location-field" data-location-picker data-search-url="{{ route('geocode.search') }}" data-reverse-url="{{ route('geocode.reverse') }}">
+        <input type="hidden" name="latitude" value="{{ old('latitude', $device?->latitude) }}" data-lat>
+        <input type="hidden" name="longitude" value="{{ old('longitude', $device?->longitude) }}" data-lng>
+        <button type="button" class="outline small" data-map-open>{{ __('Pick on map') }}</button>
+        <span class="coords" data-coords aria-live="polite"></span>
+        <button type="button" class="outline secondary small" data-map-clear hidden>{{ __('Remove pin') }}</button>
+        <dialog class="data-dialog map-dialog" data-map-dialog aria-labelledby="map-dialog-title-{{ $device?->uuid ?? 'new' }}">
+            <div class="popup-head">
+                <h2 id="map-dialog-title-{{ $device?->uuid ?? 'new' }}" tabindex="-1">{{ __('Pick the location') }}</h2>
+                <form method="dialog"><button class="popup-close">{{ __('Close') }}</button></form>
+            </div>
+            <form class="map-search" data-map-search role="search" aria-label="{{ __('Search for a place') }}">
+                <label>{{ __('Search for a place') }} <input type="search" data-map-search-input placeholder="{{ __('Town, address, landmark') }}" autocomplete="off"></label>
+                <button type="submit">{{ __('Search') }}</button>
+            </form>
+            <p class="map-message" data-map-message role="status" aria-live="polite"></p>
+            <ul class="map-results" data-map-results></ul>
+            <div class="map-box" data-map-canvas role="application" aria-label="{{ __('Map. Click to place the pin.') }}"></div>
+            <div class="map-coords">
+                <label>{{ __('Latitude') }} <input type="number" step="any" min="-90" max="90" data-dlg-lat></label>
+                <label>{{ __('Longitude') }} <input type="number" step="any" min="-180" max="180" data-dlg-lng></label>
+                <button type="button" data-map-confirm>{{ __('Use this location') }}</button>
+            </div>
+            <p><small>{{ __('Click the map, drag the pin or type the coordinates.') }}</small></p>
+        </dialog>
+    </div>
     <label>{{ __('Description') }} <textarea name="description" maxlength="500" rows="2">{{ old('description', $device?->description) }}</textarea></label>
     <input type="hidden" name="is_public" value="0">
     <label><input type="checkbox" name="is_public" value="1" role="switch" @checked(old('is_public', $device?->is_public))> {{ __('Public: visible to everyone, including visitors without an account') }}</label>
@@ -36,6 +62,18 @@
         @empty
             <p class="empty">{{ __('No measurement types are available yet.') }} <a href="{{ route('manage.types.create') }}">{{ __('Create one') }}</a>.</p>
         @endforelse
+    </fieldset>
+
+    @php($chartRows = collect(old('charts', $device?->charts->map(fn ($c) => ['type' => $c->measurement_type_id, 'kind' => $c->kind, 'title' => $c->title])->all() ?? [])))
+    <fieldset class="charts-editor">
+        <legend>{{ __('Charts') }}</legend>
+        <p><small>{{ __('Arrange the charts of the device dashboard: pick a dataset and a style, add as many as you like. Without any, each dataset gets one default chart.') }}</small></p>
+        <ol id="chart-rows" class="chart-rows">
+            @foreach($chartRows as $i => $row)
+                @include('manage._chart-row', ['key' => $i, 'row' => $row, 'options' => $types])
+            @endforeach
+        </ol>
+        <button type="button" class="outline small" hx-get="{{ route('manage.charts.row') }}" hx-include="[name='types[]']:checked" hx-target="#chart-rows" hx-swap="beforeend">{{ __('Add a chart') }}</button>
     </fieldset>
 
     <details @if(old('source_url', $device?->source_url)) open @endif>

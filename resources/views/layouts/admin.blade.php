@@ -11,6 +11,8 @@
     <link rel="preload" href="{{ asset('fonts/instrument.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    @include('partials.map-assets')
+    @stack('head')
 </head>
 <body class="admin-body" hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'>
 @php($user = auth()->user())
@@ -55,5 +57,6 @@
 <script src="{{ asset('vendor/htmx.min.js') }}"></script>
 <script src="{{ asset('js/forms.js') }}"></script>
 <script src="{{ asset('js/manage.js') }}"></script>
+@stack('scripts')
 </body>
 </html>

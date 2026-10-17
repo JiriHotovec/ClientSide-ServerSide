@@ -4,7 +4,10 @@ use App\Models\Device;
 use App\Models\Measurement;
 use App\Models\MeasurementType;
 use App\Models\User;
-use App\Support\Locales;
+use App\Support\Categories;
+use App\Support\ChartKinds;
+use App\Support\DisplaySettings;
+use App\Support\JsStrings;
 
 it('renders each language under its own URL', function () {
     $this->get('/en/login')->assertSee('Welcome <em>back.</em>', false)->assertSee('<html lang="en">', false);
@@ -136,16 +139,16 @@ it('translates category labels and the dataset plural', function () {
     $type->update(['category' => 'air']);
     $device->types()->attach(MeasurementType::create(['key' => 'noise', 'name' => 'Noise', 'unit' => 'dB', 'category' => 'other']));
 
-    $this->get("/cs/devices/{$device->uuid}")->assertSee('Kvalita vzduchu')->assertSee('Ostatní')->assertSee('datová sada');
+    $this->get("/cs/devices/{$device->uuid}")->assertSee('Kvalita vzduchu')->assertSee('Ostatní')->assertSee('graf');
 });
 
 it('formats numbers with a decimal comma in Czech', function () {
     $d = ['unit' => '°C', 'unit_position' => 'after', 'unit_space' => true, 'decimals' => 1];
 
     app()->setLocale('cs');
-    expect(\App\Support\DisplaySettings::format(21.46, $d))->toBe("21,5\u{00A0}°C");
+    expect(DisplaySettings::format(21.46, $d))->toBe("21,5\u{00A0}°C");
     app()->setLocale('en');
-    expect(\App\Support\DisplaySettings::format(21.46, $d))->toBe("21.5\u{00A0}°C");
+    expect(DisplaySettings::format(21.46, $d))->toBe("21.5\u{00A0}°C");
 });
 
 it('localizes relative times in Czech', function () {
@@ -187,7 +190,7 @@ it('has a Czech translation for every key used in views, code and scripts', func
             }
         }
     }
-    $keys = array_merge($keys, \App\Support\JsStrings::KEYS, array_values(\App\Support\Categories::ALL));
+    $keys = array_merge($keys, JsStrings::KEYS, array_values(Categories::ALL), array_values(ChartKinds::ALL));
 
     $missing = array_values(array_filter(array_unique($keys), fn ($k) => ! array_key_exists($k, $cs)));
 

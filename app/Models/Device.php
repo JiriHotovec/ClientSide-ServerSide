@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DisplaySettings;
 use Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 // user_id, is_public and the token hash are assigned explicitly by services, never mass-assigned.
-#[Fillable(['name', 'description', 'location', 'source_url', 'source_mapping', 'fetch_interval_min'])]
+#[Fillable(['name', 'description', 'location', 'latitude', 'longitude', 'source_url', 'source_mapping', 'fetch_interval_min'])]
 #[Hidden(['id', 'ingest_token_hash'])]
 class Device extends Model
 {
@@ -38,6 +39,8 @@ class Device extends Model
     {
         return [
             'is_public' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
             'source_mapping' => 'array',
             'last_fetched_at' => 'datetime',
         ];
@@ -50,12 +53,23 @@ class Device extends Model
 
     public function types(): BelongsToMany
     {
-        return $this->belongsToMany(MeasurementType::class, 'device_measurement_type')->withPivot(\App\Support\DisplaySettings::FIELDS)->orderBy('name');
+        return $this->belongsToMany(MeasurementType::class, 'device_measurement_type')->withPivot(DisplaySettings::FIELDS)->orderBy('name');
+    }
+
+    /** @return HasMany<DeviceChart, $this> */
+    public function charts(): HasMany
+    {
+        return $this->hasMany(DeviceChart::class)->orderBy('position')->orderBy('id');
     }
 
     public function measurements(): HasMany
     {
         return $this->hasMany(Measurement::class);
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function scopePublic(Builder $query): Builder

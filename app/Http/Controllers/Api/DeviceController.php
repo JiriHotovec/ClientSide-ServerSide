@@ -19,7 +19,7 @@ class DeviceController extends Controller
         $user = $request->user();
 
         return DeviceResource::collection(
-            Device::with('types')->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))->orderBy('name')->get()
+            Device::with('types', 'charts.type')->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))->orderBy('name')->get()
         );
     }
 
@@ -27,7 +27,7 @@ class DeviceController extends Controller
     {
         $this->authorize('create', Device::class);
 
-        return (new DeviceResource($this->devices->create($request->user(), $request->validated())->load('types')))
+        return (new DeviceResource($this->devices->create($request->user(), $request->validated())->load('types', 'charts.type')))
             ->response()->setStatusCode(201);
     }
 
@@ -35,14 +35,14 @@ class DeviceController extends Controller
     {
         $this->authorize('update', $device);
 
-        return new DeviceResource($device->load('types'));
+        return new DeviceResource($device->load('types', 'charts.type'));
     }
 
     public function update(DeviceRequest $request, Device $device)
     {
         $this->authorize('update', $device);
 
-        return new DeviceResource($this->devices->update($device, $request->validated())->load('types'));
+        return new DeviceResource($this->devices->update($device, $request->validated())->load('types', 'charts.type'));
     }
 
     public function destroy(Device $device)

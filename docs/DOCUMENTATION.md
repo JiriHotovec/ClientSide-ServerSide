@@ -95,6 +95,11 @@ Pages (all behind login; users see their own devices, administrators can switch 
 - **SEO:** unique `<title>` and meta description per page, `<link rel="canonical">`, `hreflang` alternates (+ `x-default`), Open Graph tags, `noindex` for login, registration, dashboard and workspace, `sitemap.xml` (every public page in both languages with alternates and `lastmod`, private devices excluded) and `robots.txt` (hides workspace, API and data popups).
 - Numbers use a decimal comma in Czech; relative times ("před 10 minutami") are localized by Carbon.
 
+## 4d. Chart styles, built-in types and maps
+- **Built-in measurement types** (`App\Support\SystemTypes`, ~50: weather, air quality, water and soil, electricity/solar power, gas): seeded by `db:seed`; `php artisan meteoview:sync-types` adds the missing ones to an existing database without touching edits.
+- **Chart styles:** line, area, step, bars, points, gauge, wind rose (`App\Support\ChartKinds`). The type sets the default style; the device owner can arrange any number of charts per device (dataset + style + optional title, in order) in the device form (`device_charts` table). A device without an arrangement shows one default chart per dataset.
+- **Maps (OpenStreetMap via vendored Leaflet):** devices have optional `latitude`/`longitude`. The device form opens a map dialog (click, drag the pin, type coordinates or search a place); an empty place name is filled from the pin. The public device list shows all matching devices with a pin on a map, and a device page shows a small map. Place search goes through our proxy (`/geocode/search`, `/geocode/reverse`, login required, throttled, cached 24 h, identifying User-Agent) so the browser never calls Nominatim directly. The CSP only gained `img-src https://tile.openstreetmap.org`.
+
 ## 5. External API integration status
 - **Integration-ready, generic JSON pull**: a device can define `source_url` and a mapping, e.g.
   ```json
@@ -114,7 +119,7 @@ Skip link, landmarks, one `h1` per page, `lang`, labelled controls, `aria-curren
 ## 8. Testing
 `composer test` (Pest 5 on PHPUnit, in-memory SQLite) · `composer test:coverage` (PCOV, fails below 80 %).
 
-Latest result: **253 tests, all passing.**
+Latest result: **294 tests, all passing.**
 
 | File | Covers |
 |---|---|

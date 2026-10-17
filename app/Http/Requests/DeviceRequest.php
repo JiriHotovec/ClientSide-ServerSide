@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\MeasurementType;
+use App\Support\ChartKinds;
 use App\Support\UrlGuard;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,9 +24,15 @@ class DeviceRequest extends FormRequest
             'name' => [$req, 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
             'location' => ['nullable', 'string', 'max:100'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'is_public' => ['sometimes', 'boolean'],
             'types' => ['sometimes', 'array'],
             'types.*' => ['integer', Rule::exists('measurement_types', 'id')],
+            'charts' => ['sometimes', 'array', 'max:'.ChartKinds::MAX_PER_DEVICE],
+            'charts.*.type' => ['required', 'integer'],
+            'charts.*.kind' => ['required', Rule::in(ChartKinds::keys())],
+            'charts.*.title' => ['nullable', 'string', 'max:80'],
             'type_settings' => ['sometimes', 'array'],
             'type_settings.*.unit' => ['nullable', 'string', 'max:20'],
         ] + MeasurementTypeRequest::displayRules('type_settings.*.', true) + [
@@ -43,7 +51,7 @@ class DeviceRequest extends FormRequest
         // HTML form (htmx) shape: unchecked checkboxes are absent, per-type overrides arrive as ts[id][field].
         if ($this->has('_form')) {
             $types = array_map('intval', (array) $this->input('types', []));
-            $defaults = \App\Models\MeasurementType::whereIn('id', $types)->pluck('color', 'id');
+            $defaults = MeasurementType::whereIn('id', $types)->pluck('color', 'id');
             $settings = [];
             foreach ($types as $id) {
                 $row = collect((array) $this->input("ts.$id", []))
@@ -51,7 +59,11 @@ class DeviceRequest extends FormRequest
                     ->reject(fn ($v, $k) => $k === 'color' && strtolower($v) === strtolower($defaults[$id] ?? '#0077b6'));
                 $settings[$id] = $row->all();
             }
-            $this->merge(['types' => $types, 'type_settings' => $settings, 'is_public' => $this->boolean('is_public')]);
+            $charts = collect((array) $this->input('charts', []))
+                ->filter(fn ($c) => ! empty($c['type']))
+                ->map(fn ($c) => ['type' => (int) $c['type'], 'kind' => $c['kind'] ?? 'line', 'title' => filled($c['title'] ?? null) ? trim($c['title']) : null])
+                ->values()->all();
+            $this->merge(['types' => $types, 'type_settings' => $settings, 'charts' => $charts, 'is_public' => $this->boolean('is_public')]);
         }
 
         // Allow the HTML form to send the mapping as a JSON string.
@@ -59,7 +71,7 @@ class DeviceRequest extends FormRequest
             $decoded = json_decode($this->input('source_mapping'), true);
             $this->merge(['source_mapping' => $this->input('source_mapping') === '' ? null : ($decoded ?? 'invalid')]);
         }
-        foreach (['source_url', 'description', 'location'] as $f) {
+        foreach (['source_url', 'description', 'location', 'latitude', 'longitude'] as $f) {
             if ($this->input($f) === '') {
                 $this->merge([$f => null]);
             }
@@ -74,10 +86,17 @@ class DeviceRequest extends FormRequest
             }
             // Types must be visible to the device owner (global ones or the owner's private ones).
             $owner = $this->route('device')?->owner ?? $this->user();
-            $allowed = \App\Models\MeasurementType::visibleTo($owner)->whereIn('id', $this->input('types', []))->pluck('id')->all();
+            $allowed = MeasurementType::visibleTo($owner)->whereIn('id', $this->input('types', []))->pluck('id')->all();
             foreach ($this->input('types', []) as $i => $id) {
                 if (! in_array($id, $allowed)) {
                     $v->errors()->add("types.$i", __('This measurement type is not available for the device owner.'));
+                }
+            }
+            // A chart can only show a dataset the device reports.
+            $reported = $this->has('types') ? array_map('intval', (array) $this->input('types')) : ($this->route('device')?->types()->pluck('measurement_types.id')->all() ?? []);
+            foreach ((array) $this->input('charts', []) as $i => $chart) {
+                if (! in_array((int) ($chart['type'] ?? 0), $reported, true)) {
+                    $v->errors()->add("charts.$i.type", __('This chart uses a dataset the device does not report.'));
                 }
             }
             if ($url = $this->input('source_url')) {

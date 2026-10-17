@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', __('My dashboard'))
+@include('partials.map-assets')
 @section('noindex', '1')
 @section('content')
 <header class="page-head">

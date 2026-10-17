@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Categories;
+use App\Support\ChartKinds;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +24,7 @@ class MeasurementTypeRequest extends FormRequest
             $prefix.'unit_space' => [...$n, 'boolean'],
             $prefix.'decimals' => [...$n, 'integer', 'min:0', 'max:6'],
             $prefix.'color' => [...$n, 'regex:/^#[0-9a-fA-F]{6}$/'],
-            $prefix.'chart_type' => [...$n, Rule::in(['line', 'bar'])],
+            $prefix.'chart_type' => [...$n, Rule::in(ChartKinds::keys())],
             $prefix.'y_min' => [...$n, 'numeric'],
             $prefix.'y_max' => [...$n, 'numeric', ...($prefix === '' ? ['gte:y_min'] : [])],
         ];
@@ -38,7 +40,7 @@ class MeasurementTypeRequest extends FormRequest
             'name' => [$req, 'string', 'max:80'],
             'unit' => [$req, 'string', 'max:20'],
             'description' => ['nullable', 'string', 'max:255'],
-            'category' => ['sometimes', Rule::in(\App\Support\Categories::keys())],
+            'category' => ['sometimes', Rule::in(Categories::keys())],
             'is_public' => ['sometimes', 'boolean'],
         ] + self::displayRules('', true);
     }

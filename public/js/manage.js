@@ -42,6 +42,19 @@
     if (m && !m.contains(e.target)) m.removeAttribute('open');
   });
 
+  // Chart editor: move or remove a row (the order of the rows is the order of the charts).
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-chart-row]');
+    if (!row) return;
+    if (e.target.closest('[data-chart-remove]')) { row.remove(); return; }
+    const move = e.target.closest('[data-chart-move]');
+    if (!move) return;
+    const sibling = move.dataset.chartMove === 'up' ? row.previousElementSibling : row.nextElementSibling;
+    if (!sibling) return;
+    move.dataset.chartMove === 'up' ? sibling.before(row) : sibling.after(row);
+    move.focus();
+  });
+
   const boot = (scope = document) => { paint(scope); scope.querySelectorAll('[data-type-form]').forEach(preview); };
   document.addEventListener('DOMContentLoaded', () => boot());
   document.addEventListener('htmx:afterSettle', (e) => boot(e.target.isConnected ? e.target : document));

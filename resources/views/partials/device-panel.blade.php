@@ -1,7 +1,10 @@
 {{-- Station dashboard shared by the public and personal views. Tiles show the current state, charts are loaded
      via fetch() by dashboard.js, aggregated tables open in an htmx-loaded dialog. --}}
 @php($service = app(\App\Services\MeasurementService::class))
-@php($groups = $device->types->groupBy('category')->sortBy(fn ($g, $k) => array_search($k, \App\Support\Categories::keys())))
+{{-- Charts: the owner's arrangement, or one default chart per dataset when nothing was arranged. --}}
+@php($cards = $device->charts()->with('type')->get()->map(fn ($c) => ['type' => $device->types->firstWhere('id', $c->measurement_type_id), 'kind' => $c->kind, 'title' => $c->title])->filter(fn ($c) => $c['type']))
+@php($cards = $cards->isNotEmpty() ? $cards : $device->types->map(fn ($t) => ['type' => $t, 'kind' => null, 'title' => null]))
+@php($groups = $cards->values()->map(fn ($c, $i) => $c + ['n' => $i])->groupBy(fn ($c) => $c['type']->category)->sortBy(fn ($g, $k) => array_search($k, \App\Support\Categories::keys())))
 @php($snaps = $device->types->mapWithKeys(fn ($t) => [$t->id => $service->snapshotFor($device, $t)]))
 @php($updated = $snaps->pluck('at')->filter()->max())
 <section class="measurement-panel station" data-meteo data-endpoint="{{ $endpoint }}" aria-labelledby="dev-title-{{ $device->uuid }}">
@@ -22,6 +25,9 @@
 
     @if($device->types->isEmpty())
         <p role="status">{{ __('This device has no datasets configured yet.') }}</p>
+        @if($device->hasCoordinates())
+            @include('partials.location-map', ['device' => $device, 'hidden' => false])
+        @endif
     @else
     <section class="tiles" aria-label="{{ __('Current conditions') }}">
         @foreach($device->types as $type)
@@ -40,12 +46,16 @@
         @endforeach
     </section>
 
+    @php($hasMap = $device->hasCoordinates())
     <div class="toolbar">
-        @if($groups->count() > 1)
+        @if($groups->count() + ($hasMap ? 1 : 0) > 1)
         <div class="group-row" role="group" aria-label="{{ __('Measurement groups of :name', ['name' => $device->name]) }}" data-group-menu>
             @foreach($groups as $cat => $types)
-                <button type="button" data-category="{{ $cat }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">{{ \App\Support\Categories::label($cat) }}<small>{{ $types->count() }}</small><span class="sr-only"> {{ trans_choice('dataset|datasets', $types->count()) }}</span></button>
+                <button type="button" data-category="{{ $cat }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">{{ \App\Support\Categories::label($cat) }}<small>{{ $types->count() }}</small><span class="sr-only"> {{ trans_choice('chart|charts', $types->count()) }}</span></button>
             @endforeach
+            @if($hasMap)
+                <button type="button" data-category="location" aria-pressed="false">{{ __('Location') }}</button>
+            @endif
         </div>
         @else
             <h2 class="toolbar-title">{{ \App\Support\Categories::label($groups->keys()->first()) }}</h2>
@@ -71,12 +81,13 @@
 
     @foreach($groups as $cat => $types)
     <div class="group-panel chart-grid" data-group="{{ $cat }}" @if($groups->count() > 1) @endif @unless($loop->first) hidden @endunless>
-        @foreach($types as $type)
-        <article class="type-card" data-card data-type="{{ $type->key }}" aria-labelledby="card-{{ $device->uuid }}-{{ $type->key }}">
+        @foreach($types as $card)
+        @php($type = $card['type'])
+        <article class="type-card" data-card data-type="{{ $type->key }}" @if($card['kind']) data-kind="{{ $card['kind'] }}" @endif aria-labelledby="card-{{ $device->uuid }}-{{ $card['n'] }}">
             <header class="card-head">
-                <h3 id="card-{{ $device->uuid }}-{{ $type->key }}">{{ $type->name }}</h3>
+                <h3 id="card-{{ $device->uuid }}-{{ $card['n'] }}">{{ $card['title'] ?: $type->name }}</h3>
                 <div class="card-actions">
-                <button type="button" class="icon-btn" data-zoom aria-label="{{ __('Enlarge chart of :name', ['name' => $type->name]) }}" hidden>
+                <button type="button" class="icon-btn" data-zoom aria-label="{{ __('Enlarge chart of :name', ['name' => $card['title'] ?: $type->name]) }}" hidden>
                     <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5M8.5 6v5M6 8.5h5"/></svg>
                 </button>
                 <button type="button" class="outline small" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-include="[data-period-state]" hx-target="#dialog-body-{{ $device->uuid }}" hx-swap="innerHTML" hx-disabled-elt="this">{{ __('Data table') }}<span class="sr-only"> {{ __('for :name', ['name' => $type->name]) }}</span></button>
@@ -96,6 +107,10 @@
         @endforeach
     </div>
     @endforeach
+
+    @if($hasMap)
+        @include('partials.location-map', ['device' => $device, 'hidden' => true])
+    @endif
 
     <dialog class="data-dialog zoom-dialog" data-zoom-dialog aria-labelledby="zoom-title-{{ $device->uuid }}">
         <div class="popup-head">

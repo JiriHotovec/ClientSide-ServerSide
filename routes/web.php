@@ -1,18 +1,22 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GeocodeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ManageActionController;
 use App\Http\Controllers\ManageController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SeoController;
 use App\Models\User;
+use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/locale/{locale}', [\App\Http\Controllers\LocaleController::class, 'update'])->name('locale');
+Route::post('/locale/{locale}', [LocaleController::class, 'update'])->name('locale');
 
 // Public, indexable pages live under a language prefix (/en/..., /cs/...) so every language has its own URL.
 // SetLocale fills the {locale} parameter automatically when routes are generated (route('devices.index')).
-Route::prefix('{locale}')->whereIn('locale', \App\Support\Locales::codes())->group(function () {
+Route::prefix('{locale}')->whereIn('locale', Locales::codes())->group(function () {
     Route::get('/', [PageController::class, 'welcome'])->name('welcome');
     Route::get('/devices', [PageController::class, 'publicDevices'])->name('devices.index');
     Route::get('/devices/{device}', [PageController::class, 'publicDevice'])->name('devices.show');
@@ -33,11 +37,16 @@ Route::get('/devices/{uuid}', fn (string $uuid) => redirect()->route('devices.sh
 Route::get('/login', fn () => redirect()->route('login'))->middleware('guest');
 Route::get('/register', fn () => redirect()->route('register'))->middleware('guest');
 
-Route::get('/sitemap.xml', [\App\Http\Controllers\SeoController::class, 'sitemap'])->name('sitemap');
-Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::middleware('throttle:geocode')->group(function () {
+        Route::get('/geocode/search', [GeocodeController::class, 'search'])->name('geocode.search');
+        Route::get('/geocode/reverse', [GeocodeController::class, 'reverse'])->name('geocode.reverse');
+    });
 
     Route::middleware('role:'.User::ROLE_USER)->group(function () {
         Route::get('/dashboard', [PageController::class, 'dashboard'])->name('dashboard');
@@ -55,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/types', [ManageActionController::class, 'storeType'])->name('types.store');
         Route::put('/types/{measurementType}', [ManageActionController::class, 'updateType'])->name('types.update');
         Route::delete('/types/{measurementType}', [ManageActionController::class, 'destroyType'])->name('types.destroy');
+        Route::get('/devices/chart-row', [ManageController::class, 'chartRow'])->name('charts.row');
         Route::get('/devices/create', [ManageController::class, 'createDevice'])->name('devices.create');
         Route::get('/devices/{device}/edit', [ManageController::class, 'editDevice'])->name('devices.edit');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');

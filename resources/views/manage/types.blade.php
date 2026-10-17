@@ -34,7 +34,7 @@
             <th scope="row">{{ $t->name }}<br><small><code>{{ $t->key }}</code></small></th>
             <td>{{ \App\Support\DisplaySettings::format(21.456, $d) }}</td>
             <td>{{ \App\Support\Categories::label($t->category) }}</td>
-            <td><span class="swatch" data-color="{{ $d['color'] }}" aria-hidden="true"></span>{{ $d['chart_type'] === 'bar' ? __('Bars') : __('Line') }}</td>
+            <td><span class="swatch" data-color="{{ $d['color'] }}" aria-hidden="true"></span>{{ \App\Support\ChartKinds::label($d['chart_type']) }}</td>
             <td>
                 <span class="badge {{ $t->is_public ? '' : 'badge-private' }}">{{ $t->is_public ? __('Global') : __('Private') }}</span>
                 @if($t->creator && $t->created_by !== auth()->id())<small>{{ __('by :name', ['name' => $t->creator->name]) }}</small>@endif

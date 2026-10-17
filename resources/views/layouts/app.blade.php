@@ -28,6 +28,7 @@
     <meta name="theme-color" content="#f8f5ef">
     <link rel="preload" href="{{ asset('fonts/instrument.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @stack('head')
 </head>
 <body class="{{ request()->routeIs('manage.*') ? 'manage-page' : (request()->routeIs('login', 'register') ? 'auth-page' : '') }}" hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'>
 <a class="skip-link" href="#main">{{ __('Skip to main content') }}</a>
@@ -72,5 +73,6 @@
 <script src="{{ asset('vendor/chart.umd.min.js') }}"></script>
 <script src="{{ asset('js/dashboard.js') }}"></script>
 @auth<script src="{{ asset('js/manage.js') }}"></script>@endauth
+@stack('scripts')
 </body>
 </html>

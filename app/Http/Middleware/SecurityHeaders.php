@@ -14,7 +14,7 @@ class SecurityHeaders
 
         // Strict CSP: all JS/CSS are same-origin files (no inline scripts/styles, no CDNs).
         $response->headers->add([
-            'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+            'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; "
                 ."connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options' => 'DENY',
