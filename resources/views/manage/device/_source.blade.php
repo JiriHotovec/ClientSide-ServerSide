@@ -37,7 +37,8 @@
 <div class="source-panel" data-source-panel="pull" @unless($pull) data-inactive @endunless>
     <h3>{{ __('Fetch settings') }}</h3>
     <div class="settings-grid">
-        <label>{{ __('Source URL') }} <input type="url" name="source_url" maxlength="500" value="{{ old('source_url', $device?->source_url) }}" placeholder="https://api.example.com/current.json" @error('source_url') aria-invalid="true" @enderror></label>
+        <label>{{ __('Source URL') }} <input type="url" name="source_url" maxlength="500" value="{{ old('source_url', $device?->source_url) }}" placeholder="https://api.example.com/current.json" @error('source_url') aria-invalid="true" aria-describedby="err-source_url" @enderror>
+            @include('manage._field-error', ['field' => 'source_url', 'id' => 'err-source_url'])</label>
         <label>{{ __('How often') }}
             <select name="fetch_interval_min">
                 @unless(array_key_exists($interval, $intervals))<option value="{{ $interval }}" selected>{{ __('Every :min minutes', ['min' => $interval]) }}</option>@endunless

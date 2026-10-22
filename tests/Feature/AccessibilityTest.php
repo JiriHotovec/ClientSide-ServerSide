@@ -26,7 +26,8 @@ it('renders the dashboard panel with live regions, a chart text alternative and 
 
     $html = $this->get("/en/devices/{$device->uuid}")->getContent();
 
-    expect($html)->toContain('aria-live="polite"')
+    expect($html)->toContain('role="status" data-announce')
+        ->toContain('<legend class="sr-only">Time period</legend>')
         ->toContain('<dialog')
         ->toContain('Data table')
         ->toContain('role="img" aria-label=')

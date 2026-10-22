@@ -7,7 +7,7 @@
         <form method="dialog"><button class="popup-close" aria-label="{{ __('Close data table') }}">{{ __('Close') }}</button></form>
     </div>
 </div>
-<form class="popup-filters" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-trigger="change" hx-target="closest [data-dialog-body]" hx-swap="innerHTML">
+<form class="popup-filters" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-trigger="change from:find select, submit" hx-target="closest [data-dialog-body]" hx-swap="innerHTML">
     <label>{{ __('Period') }}
         <select name="period">
             <option value="24h" @selected($period === '24h')>{{ __('Last 24 hours') }}</option>
@@ -17,6 +17,7 @@
     @if($period === 'custom')
         <label>{{ __('From') }} <input type="datetime-local" name="from" value="{{ $from }}"></label>
         <label>{{ __('To') }} <input type="datetime-local" name="to" value="{{ $to }}"></label>
+        <button type="submit" class="popup-close">{{ __('Apply') }}</button>
     @endif
     <input type="hidden" name="tz" value="{{ $tz }}">
     <label>{{ __('Group by') }}

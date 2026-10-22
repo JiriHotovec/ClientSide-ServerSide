@@ -26,6 +26,7 @@ class JsStrings
         'Value',
         'Location',
         'Copied.',
+        'Remove',
         'Select at least one dataset above first.',
         'Searching…',
         'No places found.',
@@ -39,6 +40,13 @@ class JsStrings
         'Your session expired. Reload the page and try again.',
         'Too many attempts. Wait a minute and try again.',
         'Something went wrong on the server. Please try again.',
+        'Token selected. Press Ctrl+C to copy it.',
+        ':name added.',
+        ':name removed.',
+        'Moved to position :n of :total.',
+        ':count charts added.',
+        ':count places found.',
+        'Wind rose of :name. Most often from :sectors.',
     ];
 
     public static function all(): array

@@ -58,8 +58,8 @@
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'chip'; b.dataset.chip = c.value;
         const x = document.createElement('span'); x.setAttribute('aria-hidden', 'true'); x.textContent = '×';
-        const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = ` ${t('Remove')}`;
-        b.append(`${c.dataset.name} `, x, sr);
+        const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = `${t('Remove')} `;
+        b.append(sr, `${c.dataset.name} `, x);
         chips.insertBefore(b, chipsEmpty);
       });
       chipsEmpty.hidden = checked.length > 0;
@@ -71,12 +71,13 @@
       if (emptyMap) emptyMap.hidden = !noneMapped;
       syncCharts();
     }
-    form.addEventListener('change', (e) => { if (e.target.matches('[data-type-toggle]')) syncDatasets(); });
+    const said = (box) => MV.announce(t(box.checked ? ':name added.' : ':name removed.', { name: box.dataset.name }));
+    form.addEventListener('change', (e) => { if (e.target.matches('[data-type-toggle]')) { syncDatasets(); said(e.target); } });
     chips.addEventListener('click', (e) => {
       const chip = e.target.closest('[data-chip]');
       if (!chip) return;
       const box = toggles.find((c) => c.value === chip.dataset.chip);
-      if (box) { box.checked = false; syncDatasets(); }
+      if (box) { box.checked = false; syncDatasets(); said(box); }
       filter?.focus();
     });
 
@@ -153,6 +154,8 @@
         if (!sibling) return;
         move.dataset.chartMove === 'up' ? sibling.before(row) : sibling.after(row);
         move.focus();
+        const all = $$('[data-chart-row]', rowsEl);
+        MV.announce(t('Moved to position :n of :total.', { n: all.indexOf(row) + 1, total: all.length }));
       }
     });
     form.addEventListener('change', (e) => { if (e.target.matches('[data-chart-type]')) syncCharts(); });
@@ -161,10 +164,14 @@
     $('[data-chart-autofill]', form).addEventListener('click', async () => {
       const checked = checkedToggles();
       if (!checked.length) { alert(t('Select at least one dataset above first.')); return; }
+      const before = $$('[data-chart-row]', rowsEl).length;
       for (const c of checked) {
         // eslint-disable-next-line no-await-in-loop
         await htmx.ajax('GET', rowsEl.dataset.rowUrl, { target: rowsEl, swap: 'beforeend', values: { 'types[]': checked.map((x) => x.value), pick: c.value, kind: c.dataset.defaultChart } });
       }
+      // The button sat in the now hidden empty state: move focus to the first new chart.
+      $$('[data-chart-row]', rowsEl)[before]?.querySelector('[data-chart-type]')?.focus();
+      MV.announce(t(':count charts added.', { count: checked.length }));
     });
 
     // ---- Data source: push or pull ----
@@ -185,8 +192,10 @@
     const form = $('[data-device-form]');
     if (!link || !form) return;
     e.preventDefault();
-    $(`[data-form-tabs] [data-tab="${link.dataset.gotoTab}"]`, form)?.click();
-    form.scrollIntoView({ block: 'start' });
+    const tab = $(`[data-form-tabs] [data-tab="${link.dataset.gotoTab}"]`, form);
+    tab?.click();
+    const field = $(`[data-panel="${link.dataset.gotoTab}"] [aria-invalid="true"]`, form);
+    (field || tab)?.focus();
   });
 
   const boot = (scope = document) => $$('[data-device-form]', scope).forEach(init);

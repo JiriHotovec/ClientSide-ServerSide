@@ -1,5 +1,5 @@
 @if($errors->any())
-    <div class="status status-error" role="alert"><strong>{{ __('Please fix the following:') }}</strong>
+    <div class="status status-error" role="alert" tabindex="-1" data-error-summary><strong>{{ __('Please fix the following:') }}</strong>
         <ul>
             @foreach($errors->messages() as $field => $messages)
                 @foreach($messages as $message)

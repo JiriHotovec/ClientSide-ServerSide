@@ -1,6 +1,8 @@
-<label>{{ __('Name') }} <input name="name" required maxlength="100" value="{{ old('name', $device?->name) }}" @error('name') aria-invalid="true" @enderror></label>
+<label>{{ __('Name') }} <input name="name" required maxlength="100" value="{{ old('name', $device?->name) }}" @error('name') aria-invalid="true" aria-describedby="err-name" @enderror>
+    @include('manage._field-error', ['field' => 'name', 'id' => 'err-name'])</label>
 <div class="location-row">
-    <label>{{ __('Location') }} <input name="location" maxlength="100" value="{{ old('location', $device?->location) }}" @error('location') aria-invalid="true" @enderror></label>
+    <label>{{ __('Location') }} <input name="location" maxlength="100" value="{{ old('location', $device?->location) }}" @error('location') aria-invalid="true" aria-describedby="err-location" @enderror>
+        @include('manage._field-error', ['field' => 'location', 'id' => 'err-location'])</label>
     <div class="location-field" data-location-picker data-dialog="map-dialog-{{ $device?->uuid ?? 'new' }}" data-search-url="{{ route('geocode.search') }}" data-reverse-url="{{ route('geocode.reverse') }}">
         <input type="hidden" name="latitude" value="{{ old('latitude', $device?->latitude) }}" data-lat>
         <input type="hidden" name="longitude" value="{{ old('longitude', $device?->longitude) }}" data-lng>

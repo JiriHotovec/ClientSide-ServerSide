@@ -8,7 +8,7 @@
     </div>
 </header>
 @include('manage._device-filters', ['withSource' => true])
-<div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+<div id="results" data-announce-swap="{{ __('Results: :count', ['count' => $devices->total()]) }}" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($devices->isEmpty())
     <p class="empty" role="status">{{ __('No devices match.') }} {{ __('Change the filters.') }}</p>
 @else
@@ -35,8 +35,8 @@
                 @else {{ __('Receives pushed readings') }} @endif
             </td>
             <td class="row-actions">
-                <a role="button" class="outline small" href="{{ route('manage.devices.edit', $device) }}" hx-boost="false">{{ __('Edit') }}<span class="sr-only"> {{ $device->name }}</span></a>
-                <form method="post" action="{{ route('manage.devices.destroy', $device) }}" class="inline-form" hx-confirm="{{ __('Delete device :name and all its measurements? This cannot be undone.', ['name' => $device->name]) }}">@csrf @method('DELETE')
+                <a class="btn outline small" href="{{ route('manage.devices.edit', $device) }}" hx-boost="false">{{ __('Edit') }}<span class="sr-only"> {{ $device->name }}</span></a>
+                <form method="post" action="{{ route('manage.devices.destroy', $device) }}" class="inline-form" hx-select-oob="#manage-status" hx-confirm="{{ __('Delete device :name and all its measurements? This cannot be undone.', ['name' => $device->name]) }}">@csrf @method('DELETE')
                     <button type="submit" class="outline contrast small">{{ __('Delete') }}<span class="sr-only"> {{ $device->name }}</span></button>
                 </form>
             </td>

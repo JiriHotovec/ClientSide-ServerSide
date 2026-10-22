@@ -50,7 +50,7 @@
                 </li>
             @else
                 <li><a href="{{ route('login') }}" @if(request()->routeIs('login')) aria-current="page" @endif>{{ __('Log in') }}</a></li>
-                <li><a href="{{ route('register') }}" role="button" class="outline">{{ __('Register') }}</a></li>
+                <li><a href="{{ route('register') }}" class="btn outline">{{ __('Register') }}</a></li>
             @endauth
             <li>@include('partials.lang-switch')</li>
         </ul>
@@ -66,6 +66,7 @@
         @yield('content')
     </div>
 </main>
+<div class="sr-only" role="status" data-announce></div>
 <footer class="site-footer"><div class="container footer-grid"><div><a class="brand footer-brand" href="{{ route('welcome') }}">Meteo<span class="brand-light">View</span></a><p>{{ __('Small places. Real observations.') }}</p></div><nav aria-label="{{ __('Footer') }}"><a href="{{ route('devices.index') }}">{{ __('Public devices') }}</a>@guest<a href="{{ route('register') }}">{{ __('Join the network') }}</a>@else<a href="{{ route('manage.overview') }}">{{ __('Your workspace') }}</a>@endguest</nav><small>{{ __('Open weather & sensor data.') }}<br>{{ __('Measured by people.') }}</small></div></footer>
 @include('partials.i18n')
 <script src="{{ asset('vendor/htmx.min.js') }}"></script>

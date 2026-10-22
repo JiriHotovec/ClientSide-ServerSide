@@ -6,7 +6,7 @@
         <h1>{{ __('Measurement types') }}</h1>
         <p class="lead">{{ auth()->user()->isAdmin() ? __('Global types are shared with everyone. Private types are visible only to you and administrators.') : __('Global types are shared with everyone. Private types are visible only to you.') }}</p>
     </div>
-    <a role="button" href="{{ route('manage.types.create') }}">{{ __('New measurement type') }}</a>
+    <a class="btn" href="{{ route('manage.types.create') }}">{{ __('New measurement type') }}</a>
 </header>
 <form method="get" class="filters" role="search" aria-label="{{ __('Filter measurement types') }}"
       hx-get="{{ route('manage.types') }}" hx-trigger="input changed delay:600ms from:find input[type=search], change from:find select" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace">
@@ -19,7 +19,7 @@
     </select></label>
     <noscript><button type="submit">{{ __('Apply') }}</button></noscript>
 </form>
-<div id="results" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
+<div id="results" data-announce-swap="{{ __('Results: :count', ['count' => $types->total()]) }}" hx-boost="true" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">
 @if($types->isEmpty())
     <p class="empty" role="status">{{ __('No measurement types match.') }} <a href="{{ route('manage.types.create') }}">{{ __('Create one') }}</a>.</p>
 @else
@@ -34,15 +34,15 @@
             <th scope="row">{{ $t->name }}<br><small><code>{{ $t->key }}</code></small></th>
             <td>{{ \App\Support\DisplaySettings::format(21.456, $d) }}</td>
             <td>{{ \App\Support\Categories::label($t->category) }}</td>
-            <td><span class="swatch" data-color="{{ $d['color'] }}" aria-hidden="true"></span>{{ \App\Support\ChartKinds::label($d['chart_type']) }}</td>
+            <td><span class="swatch" data-color="{{ $d['color'] }}" aria-hidden="true"></span><span class="sr-only">{{ __('Color :color', ['color' => $d['color']]) }}, </span>{{ \App\Support\ChartKinds::label($d['chart_type']) }}</td>
             <td>
                 <span class="badge {{ $t->is_public ? '' : 'badge-private' }}">{{ $t->is_public ? __('Global') : __('Private') }}</span>
                 @if($t->creator && $t->created_by !== auth()->id())<small>{{ __('by :name', ['name' => $t->creator->name]) }}</small>@endif
             </td>
             <td class="row-actions">
                 @can('update', $t)
-                    <a role="button" class="outline small" href="{{ route('manage.types.edit', $t) }}" hx-boost="false">{{ __('Edit') }}<span class="sr-only"> {{ $t->name }}</span></a>
-                    <form method="post" action="{{ route('manage.types.destroy', $t) }}" class="inline-form" hx-confirm="{{ __('Delete measurement type :name?', ['name' => $t->name]) }}">@csrf @method('DELETE')
+                    <a class="btn outline small" href="{{ route('manage.types.edit', $t) }}" hx-boost="false">{{ __('Edit') }}<span class="sr-only"> {{ $t->name }}</span></a>
+                    <form method="post" action="{{ route('manage.types.destroy', $t) }}" class="inline-form" hx-select-oob="#manage-status" hx-confirm="{{ __('Delete measurement type :name?', ['name' => $t->name]) }}">@csrf @method('DELETE')
                         <button type="submit" class="outline contrast small">{{ __('Delete') }}<span class="sr-only"> {{ $t->name }}</span></button>
                     </form>
                 @else

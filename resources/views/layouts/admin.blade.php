@@ -60,11 +60,12 @@
                 </p>
             </section>
         @endif
-        <div role="status" aria-live="polite" data-manage-status class="status">{{ session('status') }}</div>
+        <div id="manage-status" data-manage-status data-announce-swap class="status">{{ session('status') }}</div>
         <div role="alert" data-htmx-error class="status status-error"></div>
         @yield('content')
     </main>
 </div>
+<div class="sr-only" role="status" data-announce></div>
 @include('partials.i18n')
 <script src="{{ asset('vendor/htmx.min.js') }}"></script>
 <script src="{{ asset('js/forms.js') }}"></script>

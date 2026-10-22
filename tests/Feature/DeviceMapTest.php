@@ -234,7 +234,7 @@ it('keeps the map dialog outside the device form, because forms cannot be nested
 it('rolls the place search results out under the search field, over the map', function () {
     $html = $this->actingAs(User::factory()->create())->get('/manage/devices/create')->getContent();
 
-    expect($html)->toMatch('/class="map-search-field">.*?data-map-search-input[^>]*aria-expanded="false".*?<ul class="map-results" data-map-results><\/ul>\s*<\/div>/s');
+    expect($html)->toMatch('/class="map-search-field">.*?data-map-search-input[^>]*aria-controls="map-results-new".*?<ul class="map-results" id="map-results-new" data-map-results aria-label="Places found"><\/ul>\s*<\/div>/s');
     $css = file_get_contents(public_path('css/admin.css'));
     expect($css)->toContain('.map-results { position: absolute;')->toContain('top: calc(100% + .3rem)')->toContain('@keyframes roll-out');
 });
