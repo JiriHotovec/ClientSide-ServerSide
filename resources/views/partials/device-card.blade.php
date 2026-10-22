@@ -11,6 +11,6 @@
             <span class="dc-type">{{ __('No recent readings') }}</span>
         @endif
         <span class="dc-types">{{ $device->types->pluck('name')->join(', ') ?: __('No datasets configured') }}</span>
-        <span class="sr-only">{{ __('Open :name', ['name' => $device->name]) }}</span>
+        <span class="sr-only">{{ $linkLabel ?? __('Open :name', ['name' => $device->name]) }}</span>
     </a>
 </li>

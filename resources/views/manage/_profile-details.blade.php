@@ -2,7 +2,7 @@
 @php($u = auth()->user())
 <section aria-labelledby="details-h">
     <h2 id="details-h">{{ __('Account details') }}</h2>
-    @if(!empty($done))<p class="status" role="status">{{ $done }}</p>@endif
+    @if(!empty($done))<p class="status" data-announce-swap>{{ $done }}</p>@endif
     <form method="post" action="{{ route('manage.profile.update') }}" hx-put="{{ route('manage.profile.update') }}" hx-target="closest section" hx-select="unset" hx-push-url="false" hx-swap="outerHTML" hx-disabled-elt="find button">
         @csrf @method('PUT')
         <label>{{ __('Name') }}

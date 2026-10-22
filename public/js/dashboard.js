@@ -107,9 +107,21 @@
   }
 
   // Wind rose: how often the wind (or any direction in degrees) came from each of 16 compass sectors.
-  function roseConfig(d, line, base) {
+  function roseCounts(d) {
     const counts = new Array(16).fill(0);
     validValues(d).forEach((deg) => { counts[Math.floor((((deg % 360) + 360) % 360) / 22.5 + 0.5) % 16] += 1; });
+    return counts;
+  }
+  // Text alternative of the rose: the three most frequent sectors with their share.
+  function roseSummary(d) {
+    const counts = roseCounts(d);
+    const total = counts.reduce((a, b) => a + b, 0) || 1;
+    const names = COMPASS[MV.locale] || COMPASS.en;
+    const top = counts.map((c, i) => [names[i], c]).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return t('Wind rose of :name. Most often from :sectors.', { name: d.type.name, sectors: top.map(([n, c]) => `${n} ${Math.round((c / total) * 100)} %`).join(', ') });
+  }
+  function roseConfig(d, line, base) {
+    const counts = roseCounts(d);
     const total = counts.reduce((a, b) => a + b, 0) || 1;
     const names = COMPASS[MV.locale] || COMPASS.en;
     return {
@@ -163,6 +175,7 @@
       } catch (err) {
         if (mine !== seq) return;
         status.textContent = err instanceof TypeError ? t('Could not reach the server. Check your connection and try again.') : err.message;
+        MV.announce(status.textContent);
       } finally {
         if (mine === seq) status.removeAttribute('aria-busy');
       }
@@ -193,6 +206,7 @@
       chart?.destroy();
       if (!window.Chart) return; // the data table popup remains available as the text alternative
       chart = new Chart(canvas, buildConfig(d, label, chartColors(d), kindOf(d)));
+      if (kindOf(d) === 'rose') canvas.setAttribute('aria-label', roseSummary(d));
       canvas.parentElement.classList.add('chart-box');
     }
 
@@ -312,34 +326,52 @@
       customBtn.setAttribute('aria-expanded', 'false');
       state.period = btn.dataset.period;
       mark(btn); syncHidden(); ensureActive();
+      MV.announce(t('Loading measurements…'));
     }));
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       const err = form.querySelector('[data-range-error]');
       const from = form.elements.from.value;
       const to = form.elements.to.value;
+      const fail = (field, msg) => { err.textContent = msg; field.setAttribute('aria-invalid', 'true'); field.focus(); };
       err.textContent = '';
-      if (!from || !to) { err.textContent = t('Choose both dates and times.'); return; }
-      if (from >= to) { err.textContent = t('The start must be before the end.'); return; }
-      if ((Date.parse(to) - Date.parse(from)) / 86400000 > 92) { err.textContent = t('Choose a range of at most 92 days.'); return; }
+      [form.elements.from, form.elements.to].forEach((i) => i.removeAttribute('aria-invalid'));
+      if (!from || !to) { fail(from ? form.elements.to : form.elements.from, t('Choose both dates and times.')); return; }
+      if (from >= to) { fail(form.elements.from, t('The start must be before the end.')); return; }
+      if ((Date.parse(to) - Date.parse(from)) / 86400000 > 92) { fail(form.elements.from, t('Choose a range of at most 92 days.')); return; }
       Object.assign(state, { period: 'custom', from, to });
       form.hidden = true;
       customBtn.setAttribute('aria-expanded', 'false');
       customBtn.focus();
       mark(customBtn); syncHidden(); ensureActive();
+      MV.announce(t('Loading measurements…'));
     });
     ensureActive();
   }
 
-  // Data table popup: htmx fills the dialog, then we open it as a modal (focus is restored to the button on close).
+  // Data table popup: htmx fills the dialog, then we open it as a modal. On first open focus goes to the title and,
+  // on close, back to the "Data table" button (htmx had disabled it, so the browser cannot restore it by itself).
+  // Reloads from inside the dialog keep focus on the control that was changed and announce the new table.
+  let focusName = null;
+  document.addEventListener('htmx:beforeSwap', (e) => {
+    const a = document.activeElement;
+    focusName = e.detail.target.matches?.('[data-dialog-body]') && e.detail.target.contains(a) ? a.name || null : null;
+  });
   document.addEventListener('htmx:afterSwap', (e) => {
     const body = e.target.closest?.('[data-dialog-body]') || (e.target.matches?.('[data-dialog-body]') ? e.target : null);
     if (!body) return;
     const dialog = body.closest('dialog');
-    if (!dialog.open) dialog.showModal();
+    const reload = dialog.open;
+    if (!reload) {
+      const trigger = e.detail.requestConfig?.elt || e.detail.elt;
+      dialog.addEventListener('close', () => { if (trigger?.isConnected) trigger.focus(); }, { once: true });
+      dialog.showModal();
+    }
     localizeTimes(body);
     syncExpand(dialog);
-    body.querySelector('h2')?.focus();
+    const keep = reload && focusName && body.querySelector(`[name="${CSS.escape(focusName)}"]`);
+    (keep || body.querySelector('h2'))?.focus();
+    if (reload) MV.announce(body.querySelector('caption, .empty')?.textContent.trim());
   });
   document.addEventListener('click', (e) => {
     if (e.target.matches?.('dialog[data-dialog]')) e.target.close(); // click on the backdrop

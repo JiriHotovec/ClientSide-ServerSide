@@ -7,7 +7,7 @@
 @php($groups = $cards->values()->map(fn ($c, $i) => $c + ['n' => $i])->groupBy(fn ($c) => $c['type']->category)->sortBy(fn ($g, $k) => array_search($k, \App\Support\Categories::keys())))
 @php($snaps = $device->types->mapWithKeys(fn ($t) => [$t->id => $service->snapshotFor($device, $t)]))
 @php($updated = $snaps->pluck('at')->filter()->max())
-<section class="measurement-panel station" data-meteo data-endpoint="{{ $endpoint }}" aria-labelledby="dev-title-{{ $device->uuid }}">
+<section class="measurement-panel station" data-meteo data-announce-swap="{{ __('Showing :name', ['name' => $device->name]) }}" data-endpoint="{{ $endpoint }}" aria-labelledby="dev-title-{{ $device->uuid }}">
     <header class="station-head">
         <div>
             @if(request()->routeIs('devices.show'))
@@ -30,6 +30,7 @@
         @endif
     @else
     <section class="tiles" aria-label="{{ __('Current conditions') }}">
+        @if(request()->routeIs('devices.show'))<h2 class="sr-only">{{ __('Current conditions') }}</h2>@endif
         @foreach($device->types as $type)
             @php($sn = $snaps[$type->id])
             <div class="tile">
@@ -61,16 +62,16 @@
             <h2 class="toolbar-title">{{ \App\Support\Categories::label($groups->keys()->first()) }}</h2>
         @endif
         <div class="range-controls">
-            <fieldset role="group" aria-label="{{ __('Time period') }}" class="period">
+            <fieldset class="period"><legend class="sr-only">{{ __('Time period') }}</legend>
                 <button type="button" data-period="24h" aria-pressed="true">{{ __('24 hours') }}</button>
                 <button type="button" data-period="7d" aria-pressed="false" class="outline">{{ __('7 days') }}</button>
                 <button type="button" data-period="custom" aria-pressed="false" class="outline" aria-expanded="false" aria-controls="range-{{ $device->uuid }}">{{ __('Custom') }}</button>
             </fieldset>
             <form class="range-form" id="range-{{ $device->uuid }}" data-range-form hidden>
-                <label>{{ __('From') }} <input type="datetime-local" name="from" required></label>
-                <label>{{ __('To') }} <input type="datetime-local" name="to" required></label>
+                <label>{{ __('From') }} <input type="datetime-local" name="from" required aria-describedby="range-err-{{ $device->uuid }}"></label>
+                <label>{{ __('To') }} <input type="datetime-local" name="to" required aria-describedby="range-err-{{ $device->uuid }}"></label>
                 <button type="submit">{{ __('Show') }}</button>
-                <p class="range-error" data-range-error role="alert"></p>
+                <p class="range-error" id="range-err-{{ $device->uuid }}" data-range-error role="alert"></p>
             </form>
         </div>
     </div>
@@ -79,6 +80,7 @@
     <input type="hidden" name="to" value="" data-period-state>
     <input type="hidden" name="tz" value="0" data-period-state>
 
+    @if(request()->routeIs('devices.show') && $groups->count() + ($hasMap ? 1 : 0) > 1)<h2 class="sr-only">{{ __('Charts') }}</h2>@endif
     @foreach($groups as $cat => $types)
     <div class="group-panel chart-grid" data-group="{{ $cat }}" @if($groups->count() > 1) @endif @unless($loop->first) hidden @endunless>
         @foreach($types as $card)
@@ -93,7 +95,7 @@
                 <button type="button" class="outline small" hx-get="{{ route('devices.table', [$device, $type->key]) }}" hx-include="[data-period-state]" hx-target="#dialog-body-{{ $device->uuid }}" hx-swap="innerHTML" hx-disabled-elt="this">{{ __('Data table') }}<span class="sr-only"> {{ __('for :name', ['name' => $type->name]) }}</span></button>
                 </div>
             </header>
-            <div data-status role="status" aria-live="polite" class="status"></div>
+            <div data-status class="status"></div>
             <div data-source-warning role="alert" hidden></div>
             <dl class="stats" data-stats hidden>
                 <div><dt>{{ __('Lowest') }}</dt><dd data-stat="min"></dd></div>

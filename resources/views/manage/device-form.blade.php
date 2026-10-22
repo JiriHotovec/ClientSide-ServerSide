@@ -20,7 +20,7 @@
                 {{ __($label) }}
                 @if($key === 'datasets')<span class="tab-count" data-count="datasets">{{ $pickedIds->count() ?: '' }}</span>@endif
                 @if($key === 'charts')<span class="tab-count" data-count="charts">{{ $chartRows->count() ?: '' }}</span>@endif
-                @if(! empty($tabErrors[$key]))<span class="tab-error" title="{{ __('This section has errors') }}">!<span class="sr-only"> {{ __('This section has errors') }}</span></span>@endif
+                @if(! empty($tabErrors[$key]))<span class="tab-error"><span aria-hidden="true">!</span><span class="sr-only"> {{ __('This section has errors') }}</span></span>@endif
             </button>
         @endforeach
     </div>
@@ -34,7 +34,7 @@
 
     <div class="form-bar">
         <button type="submit">{{ $device ? __('Save changes') : __('Create device') }}</button>
-        <a role="button" class="secondary outline" href="{{ route('manage.devices') }}">{{ __('Cancel') }}</a>
+        <a class="btn secondary outline" href="{{ route('manage.devices') }}">{{ __('Cancel') }}</a>
     </div>
 </form>
 {{-- Outside the device form: HTML does not allow nested forms (the dialog has its own search and close forms). --}}
@@ -45,14 +45,14 @@
     </div>
     <form class="map-search" data-map-search role="search" aria-label="{{ __('Search for a place') }}">
         <div class="map-search-field">
-            <label>{{ __('Search for a place') }} <input type="search" data-map-search-input placeholder="{{ __('Town, address, landmark') }}" autocomplete="off" aria-expanded="false"></label>
+            <label>{{ __('Search for a place') }} <input type="search" data-map-search-input placeholder="{{ __('Town, address, landmark') }}" autocomplete="off" aria-controls="map-results-{{ $device?->uuid ?? 'new' }}"></label>
             {{-- Rolls out right under the field and overlays the map, so nothing below it moves. --}}
-            <ul class="map-results" data-map-results></ul>
+            <ul class="map-results" id="map-results-{{ $device?->uuid ?? 'new' }}" data-map-results aria-label="{{ __('Places found') }}"></ul>
         </div>
         <button type="submit">{{ __('Search') }}</button>
     </form>
     <p class="map-message" data-map-message role="status" aria-live="polite"></p>
-            <div class="map-box" data-map-canvas role="application" aria-label="{{ __('Map. Click to place the pin.') }}"></div>
+            <div class="map-box" data-map-canvas role="region" aria-label="{{ __('Map. Click to place the pin, or use the place search and the coordinate fields.') }}"></div>
     <div class="map-coords">
         <label>{{ __('Latitude') }} <input type="number" step="any" min="-90" max="90" data-dlg-lat></label>
         <label>{{ __('Longitude') }} <input type="number" step="any" min="-180" max="180" data-dlg-lng></label>

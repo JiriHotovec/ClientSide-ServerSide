@@ -10,9 +10,11 @@
 <form method="post" action="{{ $type ? route('manage.types.update', $type) : route('manage.types.store') }}" class="form-page" data-type-form hx-disabled-elt="find button[type=submit]">
     @csrf @if($type) @method('PUT') @endif
     <div class="settings-grid">
-        <label>{{ __('Key') }} <input @unless($type) name="key" @endunless required maxlength="40" pattern="[a-z0-9_]+" value="{{ old('key', $type?->key) }}" @if($type) disabled @endif aria-describedby="key-help">
-            <small id="key-help">{{ $type ? __('The key cannot be changed.') : __('Lowercase letters, digits and underscore, for example uv_index.') }}</small></label>
-        <label>{{ __('Name') }} <input name="name" required maxlength="80" value="{{ old('name', $type?->getRawOriginal('name')) }}"></label>
+        <label>{{ __('Key') }} <input @unless($type) name="key" @endunless required maxlength="40" pattern="[a-z0-9_]+" value="{{ old('key', $type?->key) }}" @if($type) disabled @endif aria-describedby="key-help @error('key') err-key @enderror" @error('key') aria-invalid="true" @enderror>
+            <small id="key-help">{{ $type ? __('The key cannot be changed.') : __('Lowercase letters, digits and underscore, for example uv_index.') }}</small>
+            @include('manage._field-error', ['field' => 'key', 'id' => 'err-key'])</label>
+        <label>{{ __('Name') }} <input name="name" required maxlength="80" value="{{ old('name', $type?->getRawOriginal('name')) }}" @error('name') aria-invalid="true" aria-describedby="err-name" @enderror>
+            @include('manage._field-error', ['field' => 'name', 'id' => 'err-name'])</label>
     </div>
     <label>{{ __('Category') }}
         <select name="category" aria-describedby="cat-help">
@@ -21,7 +23,8 @@
             @endforeach
         </select>
         <small id="cat-help">{{ __('Types in the same category are shown together on the device dashboard.') }}</small></label>
-    <label>{{ __('Description') }} <input name="description" maxlength="255" value="{{ old('description', $type?->description) }}"></label>
+    <label>{{ __('Description') }} <input name="description" maxlength="255" value="{{ old('description', $type?->description) }}" @error('description') aria-invalid="true" aria-describedby="err-description" @enderror>
+        @include('manage._field-error', ['field' => 'description', 'id' => 'err-description'])</label>
 
     <fieldset>
         <legend>{{ __('Display defaults') }}</legend>
@@ -38,7 +41,7 @@
 
     <p class="actions-row">
         <button type="submit">{{ $type ? __('Save changes') : __('Create type') }}</button>
-        <a role="button" class="secondary outline" href="{{ route('manage.types') }}">{{ __('Cancel') }}</a>
+        <a class="btn secondary outline" href="{{ route('manage.types') }}">{{ __('Cancel') }}</a>
     </p>
 </form>
 @endsection

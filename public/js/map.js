@@ -91,8 +91,8 @@
     const results = dialog.querySelector('[data-map-results]');
     const message = dialog.querySelector('[data-map-message]');
     const searchInput = dialog.querySelector('[data-map-search-input]');
-    // The result list rolls out under the field; aria-expanded tells assistive technology when it is there.
-    const closeResults = () => { results.replaceChildren(); searchInput.setAttribute('aria-expanded', 'false'); };
+    // The result list rolls out under the field; the number of places found is announced in the message.
+    const closeResults = () => { results.replaceChildren(); };
     let map = null;
     let marker = null;
 
@@ -149,11 +149,10 @@
         const res = await fetch(`${root.dataset.searchUrl}?q=${encodeURIComponent(query)}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (!res.ok) throw new Error();
         const { data } = await res.json();
-        message.textContent = data.length ? '' : t('No places found.');
-        if (data.length) searchInput.setAttribute('aria-expanded', 'true');
+        message.textContent = data.length ? t(':count places found.', { count: data.length }) : t('No places found.');
         data.forEach((p) => {
           const li = el('li'); const b = el('button', p.name); b.type = 'button';
-          b.addEventListener('click', () => { place(p.lat, p.lng, 13); closeResults(); message.textContent = t('Pin placed. Adjust it if needed and confirm.'); });
+          b.addEventListener('click', () => { place(p.lat, p.lng, 13); dialog.querySelector('[data-map-confirm]').focus(); closeResults(); message.textContent = t('Pin placed. Adjust it if needed and confirm.'); });
           li.append(b); results.append(li);
         });
       } catch (err) { message.textContent = t('The place search failed. Try again later.'); }

@@ -1,9 +1,9 @@
 <p class="hint">{{ __('Pick everything this device measures. You can tune how a dataset looks after you tick it.') }}
     {{ __('Need a type that is not listed?') }} <a href="{{ route('manage.types.create') }}" hx-boost="false">{{ __('Create a measurement type') }}</a> {{ __('first.') }}</p>
 
-<div class="chips" data-chips aria-live="polite" aria-label="{{ __('Selected datasets') }}">
+<div class="chips" data-chips role="group" aria-label="{{ __('Selected datasets') }}">
     @foreach($types->whereIn('id', $pickedIds->all()) as $t)
-        <button type="button" class="chip" data-chip="{{ $t->id }}">{{ $t->name }} <span aria-hidden="true">×</span><span class="sr-only">{{ __('Remove') }}</span></button>
+        <button type="button" class="chip" data-chip="{{ $t->id }}"><span class="sr-only">{{ __('Remove') }} </span>{{ $t->name }} <span aria-hidden="true">×</span></button>
     @endforeach
     <span class="chips-empty" data-chips-empty @if($pickedIds->isNotEmpty()) hidden @endif>{{ __('No dataset selected yet.') }}</span>
 </div>
@@ -27,9 +27,9 @@
                     <div class="appearance-head">
                         <span class="badge {{ $customized ? '' : 'badge-private' }}" data-appearance-state data-label-default="{{ __('Default appearance') }}" data-label-custom="{{ __('Customized') }}">{{ $customized ? __('Customized') : __('Default appearance') }}</span>
                         <span class="appearance-preview" data-appearance-preview></span>
-                        <button type="button" class="outline small" data-appearance-toggle aria-expanded="false" data-label-open="{{ __('Hide appearance') }}" data-label-closed="{{ __('Customize appearance') }}">{{ __('Customize appearance') }}</button>
+                        <button type="button" class="outline small" data-appearance-toggle aria-expanded="false" aria-controls="appearance-{{ $t->id }}" data-label-open="{{ __('Hide appearance') }}" data-label-closed="{{ __('Customize appearance') }}">{{ __('Customize appearance') }}</button>
                     </div>
-                    <div class="appearance-body" data-appearance-body>
+                    <div class="appearance-body" id="appearance-{{ $t->id }}" data-appearance-body role="group" aria-label="{{ __('Appearance of :name', ['name' => $t->name]) }}">
                         <p class="hint">{{ __('Only change what should differ from the type defaults.') }}</p>
                         @include('manage._display-fields', ['inherit' => true, 'part' => 'basic', 'v' => $pv, 'defaults' => $defaults, 'name' => fn ($f) => "ts[{$t->id}][{$f}]"])
                         <details class="more">

@@ -20,4 +20,44 @@
   });
   document.addEventListener('htmx:sendError', () => { const b = box(); if (b) b.textContent = MV.t(MESSAGES[0]); });
   document.addEventListener('htmx:beforeRequest', () => { const b = box(); if (b) b.textContent = ''; });
+
+  // One live region that is never swapped: screen readers ignore live regions that arrive already filled.
+  MV.announce = (text) => {
+    const live = document.querySelector('[data-announce]');
+    if (!live || !text) return;
+    live.textContent = '';
+    requestAnimationFrame(() => { live.textContent = text; });
+  };
+
+  // Swapped content marks what should be read out with [data-announce-swap] (value, or the element's text).
+  const seen = new WeakSet();
+  const pendingNotes = () => [...document.querySelectorAll('[data-announce-swap]')].filter((n) => !seen.has(n)).map((n) => {
+    seen.add(n);
+    return (n.dataset.announceSwap || n.textContent).trim();
+  }).filter(Boolean);
+  document.addEventListener('DOMContentLoaded', pendingNotes); // what is there on page load is read with the page
+
+  // An outerHTML swap removes the focused control. Focus then goes to the first invalid field, an error summary,
+  // a status message or the swapped region itself, never back to <body>.
+  let swapped = null;
+  document.addEventListener('htmx:beforeSwap', (e) => {
+    const t = e.detail.target;
+    swapped = t.id ? `#${CSS.escape(t.id)}` : t.getAttribute('aria-labelledby') ? `[aria-labelledby="${t.getAttribute('aria-labelledby')}"]` : null;
+  });
+  let queued = false;
+  document.addEventListener('htmx:afterSettle', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      MV.announce(pendingNotes().join(' '));
+      const a = document.activeElement;
+      const root = swapped && document.querySelector(swapped);
+      swapped = null;
+      if ((a && a !== document.body && a.isConnected) || !root || root.closest('dialog')) return;
+      const to = root.querySelector('[aria-invalid="true"], [data-error-summary], .status[data-announce-swap]:not(:empty)') || root;
+      if (to.tabIndex < 0 && !to.hasAttribute('tabindex') && !to.matches('input, select, textarea, button, a[href]')) to.setAttribute('tabindex', '-1');
+      to.focus({ preventScroll: to === root && root.id === 'main' });
+    });
+  });
 })();

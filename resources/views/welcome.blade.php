@@ -11,12 +11,13 @@
         </div>
         @if($featured)
             @php($snap = $featured['snap'])
-            <a class="live" href="{{ route('devices.show', $featured['device']) }}" aria-label="{{ __('Open dashboard of :name', ['name' => $featured['device']->name]) }}">
+            <a class="live" href="{{ route('devices.show', $featured['device']) }}">
                 <span class="live-top"><span>{{ $featured['device']->location ?: $featured['device']->name }}</span><span aria-hidden="true">↗</span></span>
                 <span class="live-reading"><span class="live-value">{{ \App\Support\DisplaySettings::format($snap['latest'], $snap['display'], false) }}</span>@if($snap['display']['unit_position'] !== 'none')<span class="live-unit {{ $snap['display']['unit_position'] === 'before' ? 'unit-before' : '' }}">{{ $snap['display']['unit'] }}</span>@endif</span>
                 <span class="live-type">{{ $snap['type']->name }}</span>
                 <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" role="img" aria-label="{{ __(':name over the last 24 hours', ['name' => $snap['type']->name]) }}"><polyline points="{{ $snap['points'] }}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>
                 <span class="live-bottom"><span>{{ $featured['device']->name }}<br>{{ __('Updated :time', ['time' => $snap['at']->diffForHumans()]) }}</span><span>{{ __('Public station') }} <span aria-hidden="true">↗</span></span></span>
+                <span class="sr-only">{{ __('Open dashboard of :name', ['name' => $featured['device']->name]) }}</span>
             </a>
         @else
             <div class="live live-empty">
@@ -52,12 +53,12 @@
     </div>
 </section>
 <section class="connect-section home-section" aria-labelledby="connect-title">
-    <div class="connect-copy"><h2 id="connect-title">{!! __('Your sensor.<br>A new <em>perspective.</em>') !!}</h2><p>{{ __('A home-built weather station, a greenhouse monitor, or a sensor on your balcony. Give your measurements a place to live.') }}</p><a role="button" href="{{ route('manage.devices.create') }}">{{ __('Connect a device') }} <span aria-hidden="true">↗</span></a></div>
+    <div class="connect-copy"><h2 id="connect-title">{!! __('Your sensor.<br>A new <em>perspective.</em>') !!}</h2><p>{{ __('A home-built weather station, a greenhouse monitor, or a sensor on your balcony. Give your measurements a place to live.') }}</p><a class="btn" href="{{ route('manage.devices.create') }}">{{ __('Connect a device') }} <span aria-hidden="true">↗</span></a></div>
     <ol class="connect-steps"><li><span class="step-number" aria-hidden="true">01</span><div><h3>{{ __('Make it your own.') }}</h3><p>{{ __('Name your device, add its location, and choose what it measures.') }}</p></div></li><li><span class="step-number" aria-hidden="true">02</span><div><h3>{{ __('Let the readings flow.') }}</h3><p>{{ __('Send measurements directly, or fetch them from an external JSON source on a schedule.') }}</p></div></li><li><span class="step-number" aria-hidden="true">03</span><div><h3>{{ __('Share on your terms.') }}</h3><p>{{ __('Keep your device private, or make it public for everyone to explore. You choose.') }}</p></div></li></ol>
 </section>
 <section class="home-section faq-section" aria-labelledby="faq-title">
     <div><h2 id="faq-title">{!! __('A few things,<br><em>before you begin.</em>') !!}</h2></div>
     <div class="faq-list"><details><summary>{{ __('Do I need an account to explore?') }}</summary><p>{{ __('No. Public stations and their measurement history are open to everyone. Create an account when you want to add and manage your own devices.') }}</p></details><details><summary>{{ __('Can I keep my measurements private?') }}</summary><p>{{ __('Yes. A private device and its measurements are available only to you and administrators. You can change a device\'s visibility in your workspace.') }}</p></details><details><summary>{{ __('What can I measure?') }}</summary><p>{{ __('Temperature, humidity, pressure, or your own measurement types. Choose units, decimal places, chart colors, and display settings for each dataset.') }}</p></details><details><summary>{{ __('How do I connect a sensor?') }}</summary><p>{{ __('Create a device in your workspace. Send readings using its ingest token, or configure an external JSON endpoint for MeteoView to fetch on a schedule.') }}</p></details></div>
 </section>
-<section class="join-section" aria-labelledby="join-title"><h2 id="join-title">{!! __('The world outside.<br><em>A little closer.</em>') !!}</h2><div class="actions"><a role="button" href="{{ route('devices.index') }}">{{ __('Explore public devices') }} <span aria-hidden="true">↗</span></a>@guest<a class="text-action" href="{{ route('register') }}">{{ __('Create an account') }} <span aria-hidden="true">↗</span></a>@else<a class="text-action" href="{{ route('manage.overview') }}">{{ __('Open your workspace') }} <span aria-hidden="true">↗</span></a>@endguest</div></section>
+<section class="join-section" aria-labelledby="join-title"><h2 id="join-title">{!! __('The world outside.<br><em>A little closer.</em>') !!}</h2><div class="actions"><a class="btn" href="{{ route('devices.index') }}">{{ __('Explore public devices') }} <span aria-hidden="true">↗</span></a>@guest<a class="text-action" href="{{ route('register') }}">{{ __('Create an account') }} <span aria-hidden="true">↗</span></a>@else<a class="text-action" href="{{ route('manage.overview') }}">{{ __('Open your workspace') }} <span aria-hidden="true">↗</span></a>@endguest</div></section>
 @endsection

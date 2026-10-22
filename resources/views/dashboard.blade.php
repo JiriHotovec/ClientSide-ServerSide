@@ -17,7 +17,7 @@
             @foreach($devices as $d)<option value="{{ $d->uuid }}">{{ $d->name }}{{ $d->is_public ? '' : ' ('.__('private').')' }}</option>@endforeach
         </select>
     </label>
-    <div id="panel" aria-live="polite">
+    <div id="panel">
         @include('partials.device-panel', ['device' => $selected, 'endpoint' => url("/api/devices/{$selected->uuid}/measurements")])
     </div>
 @endif

@@ -40,17 +40,22 @@
   document.addEventListener('click', async (e) => {
     const callout = e.target.closest('[data-token-callout]');
     if (!callout) return;
-    if (e.target.closest('[data-token-dismiss]')) { callout.remove(); return; }
+    if (e.target.closest('[data-token-dismiss]')) { callout.remove(); document.getElementById('main')?.focus(); return; }
     const copy = e.target.closest('[data-token-copy]');
     if (!copy) return;
     const value = callout.querySelector('[data-token-value]').textContent.trim();
     try { await navigator.clipboard.writeText(value); copy.textContent = MV.t('Copied.'); } catch (err) {
       const range = document.createRange(); range.selectNodeContents(callout.querySelector('[data-token-value]'));
       const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range); // fall back to a selection the user can copy
+      MV.announce(MV.t('Token selected. Press Ctrl+C to copy it.'));
     }
     setTimeout(() => { copy.textContent = copy.dataset.label; }, 2500);
   });
-  const focusToken = () => document.querySelector('[data-token-callout]')?.focus();
+  // Focus the callout once when it appears, not again on every later swap (e.g. typing in a filter).
+  const focusToken = () => {
+    const c = document.querySelector('[data-token-callout]:not([data-shown])');
+    if (c) { c.dataset.shown = '1'; c.focus(); }
+  };
 
   const boot = (scope = document) => { paint(scope); scope.querySelectorAll('[data-type-form]').forEach(preview); };
   document.addEventListener('DOMContentLoaded', () => { boot(); focusToken(); });
