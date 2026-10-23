@@ -64,9 +64,6 @@ $u = new App\Models\User(["name" => "Admin", "email" => getenv("ADMIN_EMAIL"), "
 $u->role = "admin"; $u->email_verified_at = now(); $u->save();
 ' >/dev/null
 fi
-php artisan config:cache --no-interaction >/dev/null
-php artisan route:cache --no-interaction >/dev/null
-php artisan view:cache --no-interaction >/dev/null
 
 # Hosts whose web root is the project root: send everything to public/.
 cat > .htaccess <<'HT'
