@@ -1,6 +1,6 @@
 # Balíček pro hosting (SQLite)
 
-`build-package.sh` vyrobí zip připravený k nahrání na hosting: `vendor` bez dev závislostí, hotový frontend, zmigrovaná SQLite databáze, produkční `.env` a cachovaný config/routy/views.
+`build-package.sh` vyrobí zip připravený k nahrání na hosting: `vendor` bez dev závislostí, hotový frontend, zmigrovaná SQLite databázea produkční `.env`.
 
 ## Požadavky (na tvém počítači)
 
@@ -47,5 +47,5 @@ Postav nový zip a nahraj ho přes starý, ale **nepřepisuj `database/database.
 ## Řešení problémů
 
 - **500 chyba:** zkontroluj práva k `storage/` a `bootstrap/cache/`, pak log v `storage/logs/`.
-- **Změna `.env` se neprojeví:** config je cachovaný, smaž `bootstrap/cache/config.php` (nebo spusť `php artisan config:cache`).
+- **Změna `.env` se neprojeví:** smaž `bootstrap/cache/config.php`, pokud existuje.
 - **Cron vrací 401:** token v hlavičce neodpovídá `CRON_SECRET` v `.env`.
